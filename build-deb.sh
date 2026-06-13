@@ -74,10 +74,22 @@ Description: Akıllı Tahta Kulak Sağlığı Koruma Sistemi
  Python + GTK3 ile yazılmış yerli uygulama.
 CTRL
 
+# Kurulum sonrası: eski kullanıcı kopyalarını temizle
+cat > "$PKG/DEBIAN/postinst" << 'POSTINST'
+#!/bin/bash
+# Eski ~/.local/share/ozbel/ozbel.py varsa sil (launcher artık /opt/ozbel/ kullanır)
+for userdir in /home/*; do
+  rm -f "$userdir/.local/share/ozbel/ozbel.py"
+done
+exit 0
+POSTINST
+chmod 755 "$PKG/DEBIAN/postinst"
+
 # Kaldırılırken çalışanı durdur
 cat > "$PKG/DEBIAN/prerm" << 'PRERM'
 #!/bin/bash
 pkill -f /opt/ozbel/ozbel.py 2>/dev/null || true
+pkill -f ozbel.py 2>/dev/null || true
 exit 0
 PRERM
 chmod 755 "$PKG/DEBIAN/prerm"
