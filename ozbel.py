@@ -26,7 +26,7 @@ FIREBASE_DB = "https://ozbel-eb6af-default-rtdb.europe-west1.firebasedatabase.ap
 NETLIFY_URL = "https://glistening-fudge-bca794.netlify.app"
 # ══════════════════════════════════════════════════════════════
 
-APP_VERSION = "1.0.7"
+APP_VERSION = "1.0.8"
 UPDATE_JSON = "https://raw.githubusercontent.com/ozguroyunuzmn/ozbel/main/version.json"
 
 SESSION   = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
@@ -340,9 +340,12 @@ class OzBelApp:
         except Exception: pass
         try: self.relay.running = False
         except Exception: pass
-        # Kullanıcı klasöründeki yeni dosyayı çalıştır
         new_file = getattr(self, '_update_dest', os.path.abspath(__file__))
-        os.execv(sys.executable, [sys.executable, new_file])
+        try:
+            os.execvp("python3", ["python3", new_file])
+        except Exception:
+            subprocess.Popen(["python3", new_file])
+            Gtk.main_quit()
 
     def build_tray(self):
         try:
