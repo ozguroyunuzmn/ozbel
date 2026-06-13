@@ -26,7 +26,7 @@ FIREBASE_DB = "https://ozbel-eb6af-default-rtdb.europe-west1.firebasedatabase.ap
 NETLIFY_URL = "https://glistening-fudge-bca794.netlify.app"
 # ══════════════════════════════════════════════════════════════
 
-APP_VERSION = "1.1.2"
+APP_VERSION = "1.1.3"
 UPDATE_JSON = "https://raw.githubusercontent.com/ozguroyunuzmn/ozbel/main/version.json"
 
 SESSION   = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
@@ -149,6 +149,9 @@ CSS = (
 "               background:#0d1f0d; border:1px solid #1a3a1a;"
 "               border-radius:999px; padding:8px 24px; }\n"
 ".ready-sub   { color:#8b949e; font-size:14px; }\n"
+".test-badge  { color:#ff8f00; font-size:11px; font-weight:700;"
+"              background:#1a1200; border:1px solid #4a3000;"
+"              border-radius:999px; padding:3px 12px; }\n"
 "button.outline { background:transparent; color:#8b949e;"
 "                 border:1px solid #30363d; border-radius:10px; padding:8px 20px; }\n"
 "button.green  { background:#1db954; color:#00140a; border-radius:12px;"
@@ -482,6 +485,12 @@ class OzBelApp:
         ver.get_style_context().add_class("version")
         ver.set_halign(Gtk.Align.CENTER)
         box.pack_start(ver, False, False, 0)
+
+        # Test etiketi
+        test_lbl = Gtk.Label(label="7-F'de Test Aşamasında Çalışılıyor")
+        test_lbl.get_style_context().add_class("test-badge")
+        test_lbl.set_halign(Gtk.Align.CENTER)
+        box.pack_start(test_lbl, False, False, 4)
 
         outer.pack_start(box, True, True, 0)
         self.stack.add_named(outer, "setup")
