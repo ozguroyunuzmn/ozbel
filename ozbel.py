@@ -26,7 +26,7 @@ FIREBASE_DB = "https://ozbel-eb6af-default-rtdb.europe-west1.firebasedatabase.ap
 NETLIFY_URL = "https://glistening-fudge-bca794.netlify.app"
 # ══════════════════════════════════════════════════════════════
 
-APP_VERSION = "1.0.0"
+APP_VERSION = "1.0.1"
 UPDATE_JSON = "https://raw.githubusercontent.com/ozguroyunuzmn/ozbel/main/version.json"
 
 SESSION   = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
@@ -218,8 +218,9 @@ class OzBelApp:
         try:
             resp = urllib.request.urlopen(UPDATE_JSON, timeout=10).read()
             info = json.loads(resp)
-            latest  = info.get("version", "")
-            py_url  = info.get("url", "")
+            latest    = info.get("version", "")
+            py_url    = info.get("url", "")
+            changelog = info.get("changelog", [])
         except Exception as e:
             GLib.idle_add(self._update_dialog, "error", str(e))
             return
@@ -232,7 +233,7 @@ class OzBelApp:
             GLib.idle_add(self._update_dialog, "latest", latest)
             return
 
-        GLib.idle_add(self._update_dialog, "available", latest, py_url)
+        GLib.idle_add(self._update_dialog, "available", latest, py_url, changelog)
 
     def _update_dialog(self, state, *args):
         if state == "error":
@@ -250,14 +251,15 @@ class OzBelApp:
             dlg.run(); dlg.destroy()
 
         elif state == "available":
-            latest, py_url = args
+            latest, py_url, changelog = args
+            log_text = "\n".join(f"• {c}" for c in changelog) if changelog else "—"
             dlg = Gtk.MessageDialog(transient_for=self.win,
                 message_type=Gtk.MessageType.QUESTION,
                 buttons=Gtk.ButtonsType.YES_NO,
-                text=f"Güncelleme Mevcut: {latest}")
+                text=f"Güncelleme Mevcut — v{latest}")
             dlg.format_secondary_text(
-                f"Mevcut sürüm: {APP_VERSION}\n"
-                f"Yeni sürüm: {latest}\n\n"
+                f"Mevcut sürüm: {APP_VERSION}  →  Yeni sürüm: {latest}\n\n"
+                f"Değişiklikler:\n{log_text}\n\n"
                 f"Güncelleme indirilip uygulama yeniden başlatılacak. Devam edilsin mi?")
             resp = dlg.run(); dlg.destroy()
             if resp == Gtk.ResponseType.YES:
@@ -410,10 +412,8 @@ class OzBelApp:
 
     # ── Uyarı penceresi ──
     def build_alert(self):
-        self.alert_win = Gtk.Window(type=Gtk.WindowType.POPUP)
-        self.alert_win.set_keep_above(True); self.alert_win.fullscreen()
-        self.alert_win.get_style_context().add_class("alert-win")
         b = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=18)
+        b.get_style_context().add_class("alert-win")
         b.set_halign(Gtk.Align.CENTER); b.set_valign(Gtk.Align.CENTER)
         e = Gtk.Label(); e.set_markup('<span size="90000">🔇</span>'); b.pack_start(e, False, False, 0)
         ti = Gtk.Label(label="Lütfen Sessiz Olun!"); ti.get_style_context().add_class("alert-title")
@@ -422,7 +422,7 @@ class OzBelApp:
         b.pack_start(self.alert_db, False, False, 0)
         sub = Gtk.Label(label="Kulak sağlığınız için ses 90 dB'nin altında olmalı")
         sub.get_style_context().add_class("alert-sub"); b.pack_start(sub, False, False, 0)
-        self.alert_win.add(b)
+        self.stack.add_named(b, "alert")
 
     def gen_qr(self):
         p = make_qr(f"{NETLIFY_URL}/?s={SESSION}", 9)
@@ -472,7 +472,7 @@ class OzBelApp:
         self.alert_db.set_text(f"{db}  dB")
         if not self.alert_open:
             self.alert_open = True
-            self.alert_win.show_all()
+            self.stack.set_visible_child_name("alert")
         if self.alert_src:
             GLib.source_remove(self.alert_src)
         self.alert_src = GLib.timeout_add_seconds(6, self._auto_hide)
@@ -482,7 +482,12 @@ class OzBelApp:
 
     def hide_alert(self):
         if self.alert_open:
-            self.alert_win.hide(); self.alert_open = False
+            self.alert_open = False
+            # Önceki ekrana geri dön
+            if self.win.get_visible():
+                self.stack.set_visible_child_name("ready")
+            else:
+                self.stack.set_visible_child_name("setup")
 
     def disconnect_teacher(self, *_):
         self.relay.put("control", "disconnect")

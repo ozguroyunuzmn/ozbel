@@ -1,4 +1,12 @@
 {
-  "version": "1.0.0",
-  "url": "https://raw.githubusercontent.com/ozguroyunuzmn/ozbel/main/ozbel.py"
+  "version": "1.0.1",
+  "url": "https://raw.githubusercontent.com/ozguroyunuzmn/ozbel/main/ozbel.py",
+  "changelog": [
+    "Uyarı ekranı tam ekran kapsar hale getirildi",
+    "Sağ alta kamera ile okunabilir QR kodu eklendi",
+    "Sol alta Güncelleme Denetle butonu eklendi",
+    "Otomatik güncelleme sistemi (GitHub üzerinden) eklendi",
+    "Telefon sitesi arayüzü yenilendi",
+    "Telefonda 90 dB aşımında tam ekran uyarı eklendi"
+  ]
 }
