@@ -26,7 +26,7 @@ FIREBASE_DB = "https://ozbel-eb6af-default-rtdb.europe-west1.firebasedatabase.ap
 NETLIFY_URL = "https://glistening-fudge-bca794.netlify.app"
 # ══════════════════════════════════════════════════════════════
 
-APP_VERSION = "1.0.6"
+APP_VERSION = "1.0.7"
 UPDATE_JSON = "https://raw.githubusercontent.com/ozguroyunuzmn/ozbel/main/version.json"
 
 SESSION   = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
@@ -118,24 +118,66 @@ def make_qr(data, size):
 
 
 CSS = b"""
-window { background-color: #0d1117; }
-.title    { color:#e6edf3; font-size:34px; font-weight:800; }
-.subtitle { color:#8b949e; font-size:14px; }
-.card-title { color:#e6edf3; font-size:22px; font-weight:700; }
-.qrlabel  { color:#8b949e; font-size:12px; }
-.code     { color:#1a73e8; font-size:26px; font-weight:900; }
-.pill     { color:#7090d0; font-size:14px; font-weight:600; }
-.pill-ok  { color:#1db954; font-size:14px; font-weight:600; }
-.ready-title { color:#1db954; font-size:52px; font-weight:900; }
-.ready-sub   { color:#8b949e; font-size:18px; }
-.db-live     { color:#e6edf3; font-size:40px; font-weight:900; }
-.card { background-color:#161b22; border:1px solid #30363d; border-radius:16px; padding:24px; }
-button.outline { background:transparent; color:#8b949e; border:1px solid #30363d; border-radius:10px; padding:8px 20px; }
-button.green   { background:#1db954; color:#00140a; border-radius:12px; padding:12px 30px; font-weight:700; border:none; }
-.alert-win   { background-color:#1a0000; }
-.alert-title { color:#e53935; font-size:44px; font-weight:900; }
-.alert-db    { color:#e53935; font-size:80px; font-weight:900; }
-.alert-sub   { color:#c08080; font-size:22px; }
+window, .screen-bg { background-color:#0d1117; }
+
+/* Tipografi */
+.logo-text  { color:#e6edf3; font-size:42px; font-weight:900; letter-spacing:-1px; }
+.logo-blue  { color:#1a73e8; font-size:42px; font-weight:900; letter-spacing:-1px; }
+.subtitle   { color:#8b949e; font-size:13px; }
+.section-title { color:#e6edf3; font-size:18px; font-weight:700; }
+.code       { color:#1a73e8; font-size:30px; font-weight:900; letter-spacing:4px; }
+.qrlabel    { color:#8b949e; font-size:11px; }
+.version    { color:#30363d; font-size:11px; }
+
+/* Durum hapı */
+.pill       { color:#7090d0; font-size:13px; font-weight:600;
+              background:#0d1629; border:1px solid #1e2d4a;
+              border-radius:999px; padding:6px 16px; }
+.pill-ok    { color:#1db954; font-size:13px; font-weight:600;
+              background:#0d1f0d; border:1px solid #1a3a1a;
+              border-radius:999px; padding:6px 16px; }
+
+/* Kart */
+.card { background-color:#161b22; border:1px solid #21262d;
+        border-radius:16px; padding:20px; }
+.card-title { color:#e6edf3; font-size:15px; font-weight:700; }
+.step-num   { color:#1a73e8; font-size:11px; font-weight:800;
+              background:#0d1f3a; border:1px solid #1a3a6a;
+              border-radius:999px; padding:2px 8px; }
+.step-txt   { color:#8b949e; font-size:12px; }
+.step-txt-b { color:#e6edf3; font-size:12px; font-weight:700; }
+
+/* dB göstergesi */
+.db-huge  { color:#e6edf3; font-size:72px; font-weight:900; }
+.db-unit  { color:#8b949e; font-size:16px; }
+.db-live  { color:#e6edf3; font-size:38px; font-weight:900; }
+.db-ok    { color:#1db954; font-size:38px; font-weight:900; }
+.db-warn  { color:#e53935; font-size:38px; font-weight:900; }
+.db-mid   { color:#ff8f00; font-size:38px; font-weight:900; }
+
+/* Hazır ekranı */
+.ready-label { color:#1db954; font-size:20px; font-weight:700;
+               background:#0d1f0d; border:1px solid #1a3a1a;
+               border-radius:999px; padding:8px 24px; }
+.ready-sub   { color:#8b949e; font-size:14px; }
+
+/* Butonlar */
+button.outline { background:transparent; color:#8b949e;
+                 border:1px solid #30363d; border-radius:10px; padding:8px 20px; }
+button.outline:hover { color:#e6edf3; border-color:#8b949e; }
+button.green  { background:#1db954; color:#00140a; border-radius:12px;
+                padding:12px 32px; font-weight:700; border:none; font-size:14px; }
+button.red    { background:#e53935; color:#fff; border-radius:12px;
+                padding:12px 32px; font-weight:700; border:none; font-size:14px; }
+button.blue   { background:#1a73e8; color:#fff; border-radius:12px;
+                padding:10px 24px; font-weight:700; border:none; font-size:13px; }
+
+/* Uyarı ekranı */
+.alert-win   { background-color:#0d0000; }
+.alert-title { color:#ff1744; font-size:56px; font-weight:900; }
+.alert-db    { color:#ff5252; font-size:110px; font-weight:900; }
+.alert-unit  { color:#c08080; font-size:28px; font-weight:600; }
+.alert-sub   { color:#a06060; font-size:20px; }
 """
 
 
@@ -356,73 +398,174 @@ class OzBelApp:
 
     # ── Kurulum ekranı ──
     def build_setup(self):
-        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=20)
+        outer = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
+        outer.set_halign(Gtk.Align.FILL); outer.set_valign(Gtk.Align.FILL)
+
+        # İçerik — yatayda ortalanmış, max genişlik
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=18)
         box.set_halign(Gtk.Align.CENTER); box.set_valign(Gtk.Align.CENTER)
+        box.set_margin_top(32); box.set_margin_bottom(32)
+        box.set_margin_start(40); box.set_margin_end(40)
 
-        t = Gtk.Label(label="🔊  ÖzBel"); t.get_style_context().add_class("title")
-        box.pack_start(t, False, False, 0)
-        s = Gtk.Label(label="Akıllı Tahta Kulak Sağlığı Koruma Sistemi")
-        s.get_style_context().add_class("subtitle"); box.pack_start(s, False, False, 0)
+        # Logo satırı
+        logo_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+        logo_row.set_halign(Gtk.Align.CENTER)
+        l1 = Gtk.Label(label="Öz"); l1.get_style_context().add_class("logo-text")
+        l2 = Gtk.Label(label="Bel"); l2.get_style_context().add_class("logo-blue")
+        logo_row.pack_start(l1, False, False, 0)
+        logo_row.pack_start(l2, False, False, 0)
+        box.pack_start(logo_row, False, False, 0)
 
-        card = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
+        sub = Gtk.Label(label="Akıllı Tahta  •  Kulak Sağlığı Koruma Sistemi")
+        sub.get_style_context().add_class("subtitle")
+        sub.set_halign(Gtk.Align.CENTER)
+        box.pack_start(sub, False, False, 0)
+
+        # Ana yatay alan: sol kart + sağ QR
+        hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=32)
+        hbox.set_halign(Gtk.Align.CENTER)
+
+        # Sol — adımlar kartı
+        card = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=14)
         card.get_style_context().add_class("card")
-        ct = Gtk.Label(label="Kulak Sağlığı Sistemini Kurmak İster misiniz?")
-        ct.get_style_context().add_class("card-title"); card.pack_start(ct, False, False, 0)
-        for txt in [
-            "Aşağıdaki QR'ı telefon kameranızla okutun",
-            "Açılan sayfada mikrofon izni verin",
-            "Sistem hazır — sınıf 90 dB'i aşınca uyarı çıkar",
-        ]:
-            r = Gtk.Label(); r.set_markup(f'<span foreground="#8b949e">•  {txt}</span>')
-            r.set_halign(Gtk.Align.START); card.pack_start(r, False, False, 0)
-        box.pack_start(card, False, False, 0)
+        card.set_margin_top(4)
 
-        self.qr_img = Gtk.Image(); box.pack_start(self.qr_img, False, False, 0)
-        self.code_lbl = Gtk.Label(label=f"Kod: {SESSION}")
+        ct = Gtk.Label(label="Nasıl Başlanır?")
+        ct.get_style_context().add_class("card-title")
+        ct.set_halign(Gtk.Align.START)
+        card.pack_start(ct, False, False, 0)
+
+        steps = [
+            ("1", "Sağdaki QR kodu", "telefon kameranızla okutun"),
+            ("2", "Açılan sayfada", "mikrofon iznini verin"),
+            ("3", "Sistem hazır —", "90 dB'i aşınca uyarı çıkar"),
+        ]
+        for num, bold, rest in steps:
+            row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+            row.set_margin_top(2)
+            n = Gtk.Label(label=num); n.get_style_context().add_class("step-num")
+            n.set_valign(Gtk.Align.CENTER)
+            row.pack_start(n, False, False, 0)
+            txt_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
+            b_lbl = Gtk.Label(label=bold); b_lbl.get_style_context().add_class("step-txt-b")
+            b_lbl.set_halign(Gtk.Align.START)
+            r_lbl = Gtk.Label(label=rest); r_lbl.get_style_context().add_class("step-txt")
+            r_lbl.set_halign(Gtk.Align.START)
+            txt_box.pack_start(b_lbl, False, False, 0)
+            txt_box.pack_start(r_lbl, False, False, 0)
+            row.pack_start(txt_box, False, False, 0)
+            card.pack_start(row, False, False, 0)
+
+        hbox.pack_start(card, False, False, 0)
+
+        # Sağ — QR + kod
+        qr_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
+        qr_box.set_halign(Gtk.Align.CENTER)
+        self.qr_img = Gtk.Image()
+        qr_box.pack_start(self.qr_img, False, False, 0)
+        self.code_lbl = Gtk.Label(label=SESSION)
         self.code_lbl.get_style_context().add_class("code")
-        box.pack_start(self.code_lbl, False, False, 0)
-        ql = Gtk.Label(label="↑ Telefon kameranızla bu kareyi okutun")
-        ql.get_style_context().add_class("qrlabel"); box.pack_start(ql, False, False, 0)
+        self.code_lbl.set_halign(Gtk.Align.CENTER)
+        qr_box.pack_start(self.code_lbl, False, False, 0)
+        ql = Gtk.Label(label="Kameranızla okutun")
+        ql.get_style_context().add_class("qrlabel")
+        ql.set_halign(Gtk.Align.CENTER)
+        qr_box.pack_start(ql, False, False, 0)
+        hbox.pack_start(qr_box, False, False, 0)
 
+        box.pack_start(hbox, False, False, 0)
+
+        # Durum hapı
         self.pill = Gtk.Label(label="●  Öğretmen bekleniyor…")
         self.pill.get_style_context().add_class("pill")
+        self.pill.set_halign(Gtk.Align.CENTER)
         box.pack_start(self.pill, False, False, 0)
 
-        nob = Gtk.Button(label="Gerek Yok — Kapat")
-        nob.get_style_context().add_class("outline"); nob.set_halign(Gtk.Align.CENTER)
-        nob.connect("clicked", self.quit); box.pack_start(nob, False, False, 0)
+        # Kapat butonu
+        nob = Gtk.Button(label="Kapat")
+        nob.get_style_context().add_class("outline")
+        nob.set_halign(Gtk.Align.CENTER)
+        nob.connect("clicked", self.quit)
+        box.pack_start(nob, False, False, 0)
 
-        self.stack.add_named(box, "setup")
+        # Sürüm
+        ver = Gtk.Label(label=f"v{APP_VERSION}")
+        ver.get_style_context().add_class("version")
+        ver.set_halign(Gtk.Align.CENTER)
+        box.pack_start(ver, False, False, 0)
+
+        outer.pack_start(box, True, True, 0)
+        self.stack.add_named(outer, "setup")
 
     # ── Hazır ekranı ──
     def build_ready(self):
-        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=24)
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=20)
         box.set_halign(Gtk.Align.CENTER); box.set_valign(Gtk.Align.CENTER)
-        ico = Gtk.Label(); ico.set_markup('<span size="70000">✅</span>')
+
+        ico = Gtk.Label(); ico.set_markup('<span size="80000">🎙️</span>')
         box.pack_start(ico, False, False, 0)
-        rt = Gtk.Label(label="Hazırsınız!"); rt.get_style_context().add_class("ready-title")
-        box.pack_start(rt, False, False, 0)
-        rs = Gtk.Label(label="Öğretmenin telefon mikrofonu aktif — sistem çalışıyor")
-        rs.get_style_context().add_class("ready-sub"); box.pack_start(rs, False, False, 0)
-        self.db_live = Gtk.Label(label="—  dB"); self.db_live.get_style_context().add_class("db-live")
-        box.pack_start(self.db_live, False, False, 0)
-        btn = Gtk.Button(label="Bağlantıyı Kes"); btn.get_style_context().add_class("green")
-        btn.set_halign(Gtk.Align.CENTER); btn.connect("clicked", self.disconnect_teacher)
+
+        rl = Gtk.Label(label="● Sistem Aktif")
+        rl.get_style_context().add_class("ready-label")
+        rl.set_halign(Gtk.Align.CENTER)
+        box.pack_start(rl, False, False, 0)
+
+        rs = Gtk.Label(label="Öğretmenin telefon mikrofonu bağlı — anlık ölçüm yapılıyor")
+        rs.get_style_context().add_class("ready-sub")
+        rs.set_halign(Gtk.Align.CENTER)
+        box.pack_start(rs, False, False, 0)
+
+        db_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+        db_row.set_halign(Gtk.Align.CENTER)
+        self.db_live = Gtk.Label(label="—")
+        self.db_live.get_style_context().add_class("db-huge")
+        db_unit = Gtk.Label(label="dB")
+        db_unit.get_style_context().add_class("db-unit")
+        db_unit.set_valign(Gtk.Align.END)
+        db_unit.set_margin_bottom(14)
+        db_row.pack_start(self.db_live, False, False, 0)
+        db_row.pack_start(db_unit, False, False, 0)
+        box.pack_start(db_row, False, False, 0)
+
+        btn = Gtk.Button(label="Bağlantıyı Kes")
+        btn.get_style_context().add_class("red")
+        btn.set_halign(Gtk.Align.CENTER)
+        btn.connect("clicked", self.disconnect_teacher)
         box.pack_start(btn, False, False, 0)
+
         self.stack.add_named(box, "ready")
 
-    # ── Uyarı penceresi ──
+    # ── Uyarı ekranı ──
     def build_alert(self):
-        b = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=18)
+        b = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=14)
         b.get_style_context().add_class("alert-win")
         b.set_halign(Gtk.Align.CENTER); b.set_valign(Gtk.Align.CENTER)
-        e = Gtk.Label(); e.set_markup('<span size="90000">🔇</span>'); b.pack_start(e, False, False, 0)
-        ti = Gtk.Label(label="Lütfen Sessiz Olun!"); ti.get_style_context().add_class("alert-title")
+
+        ico = Gtk.Label(); ico.set_markup('<span size="120000">🔇</span>')
+        b.pack_start(ico, False, False, 0)
+
+        ti = Gtk.Label(label="LÜTFEN SESSİZ OLUN!")
+        ti.get_style_context().add_class("alert-title")
+        ti.set_halign(Gtk.Align.CENTER)
         b.pack_start(ti, False, False, 0)
-        self.alert_db = Gtk.Label(label="—  dB"); self.alert_db.get_style_context().add_class("alert-db")
-        b.pack_start(self.alert_db, False, False, 0)
-        sub = Gtk.Label(label="Kulak sağlığınız için ses 90 dB'nin altında olmalı")
-        sub.get_style_context().add_class("alert-sub"); b.pack_start(sub, False, False, 0)
+
+        db_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+        db_row.set_halign(Gtk.Align.CENTER)
+        self.alert_db = Gtk.Label(label="—")
+        self.alert_db.get_style_context().add_class("alert-db")
+        unit = Gtk.Label(label="dB")
+        unit.get_style_context().add_class("alert-unit")
+        unit.set_valign(Gtk.Align.END)
+        unit.set_margin_bottom(18)
+        db_row.pack_start(self.alert_db, False, False, 0)
+        db_row.pack_start(unit, False, False, 0)
+        b.pack_start(db_row, False, False, 0)
+
+        sub = Gtk.Label(label="Kulak sağlığı için ses seviyesi 90 dB'nin altında olmalıdır")
+        sub.get_style_context().add_class("alert-sub")
+        sub.set_halign(Gtk.Align.CENTER)
+        b.pack_start(sub, False, False, 0)
+
         self.stack.add_named(b, "alert")
 
     def gen_qr(self):
@@ -493,7 +636,7 @@ class OzBelApp:
 
     # ── Uyarı ──
     def show_alert(self, db):
-        self.alert_db.set_text(f"{db}  dB")
+        self.alert_db.set_text(f"{db}")
         if db > self.alert_max_db:
             self.alert_max_db = db
         if not self.alert_open:

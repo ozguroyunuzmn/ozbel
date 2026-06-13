@@ -1,7 +1,8 @@
 {
-  "version": "1.0.6",
+  "version": "1.0.7",
   "url": "https://raw.githubusercontent.com/ozguroyunuzmn/ozbel/main/ozbel.py",
   "changelog": [
+    "Uygulama arayüzü tamamen yenilendi — modern kart tasarımı, daha büyük dB göstergesi",
     "Uyarı tam ekran modunda açılır hale getirildi",
     "Ders bitince kaç kez uyarı verildiği ve en yüksek dB özet olarak gösterilir",
     "90 dB uyarısı tahtada görünmüyordu hatası düzeltildi (pencere gizliyken açılmıyordu)",
