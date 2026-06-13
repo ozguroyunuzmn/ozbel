@@ -26,7 +26,7 @@ FIREBASE_DB = "https://ozbel-eb6af-default-rtdb.europe-west1.firebasedatabase.ap
 NETLIFY_URL = "https://glistening-fudge-bca794.netlify.app"
 # ══════════════════════════════════════════════════════════════
 
-APP_VERSION = "1.0.9"
+APP_VERSION = "1.1.0"
 UPDATE_JSON = "https://raw.githubusercontent.com/ozguroyunuzmn/ozbel/main/version.json"
 
 SESSION   = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
@@ -117,7 +117,7 @@ def make_qr(data, size):
         return None
 
 
-CSS = b"""
+CSS = """
 window, .screen-bg { background-color:#0d1117; }
 
 /* Tipografi */
@@ -183,7 +183,7 @@ button.blue   { background:#1a73e8; color:#fff; border-radius:12px;
 
 class OzBelApp:
     def __init__(self):
-        provider = Gtk.CssProvider(); provider.load_from_data(CSS)
+        provider = Gtk.CssProvider(); provider.load_from_data(CSS.encode('utf-8'))
         Gtk.StyleContext.add_provider_for_screen(
             Gdk.Screen.get_default(), provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
 
