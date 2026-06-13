@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>ÖzBel — Öğretmen</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+:root {
+  --blue:#1a73e8; --green:#1db954; --red:#e53935; --orange:#ff8f00;
+  --bg:#0d1117; --card:#161b22; --border:#30363d; --text:#e6edf3; --muted:#8b949e;
+}
+html,body { height:100%; background:var(--bg); color:var(--text);
+  font-family:'Segoe UI',system-ui,sans-serif; overflow:hidden; }
+body { display:flex; flex-direction:column; align-items:center; justify-content:center;
+  padding:24px; min-height:100dvh; }
+.screen { display:none; flex-direction:column; align-items:center; gap:20px; width:100%; max-width:390px; }
+.screen.active { display:flex; }
+
+/* Logo */
+.logo { display:flex; align-items:center; gap:10px; }
+.logo-icon { width:38px; height:38px; background:var(--blue); border-radius:10px;
+  display:flex; align-items:center; justify-content:center; font-size:20px; }
+.logo-text { font-size:26px; font-weight:900; letter-spacing:-1px; }
+.logo-text em { color:var(--blue); font-style:normal; }
+.logo-sub { font-size:11px; color:var(--muted); text-align:center; margin-top:-14px; }
+
+/* Kartlar */
+.card { background:var(--card); border:1px solid var(--border); border-radius:18px; padding:22px; width:100%; }
+.card-title { font-size:15px; font-weight:700; margin-bottom:10px; }
+.step { display:flex; align-items:flex-start; gap:12px; padding:10px 0;
+  border-bottom:1px solid var(--border); }
+.step:last-child { border-bottom:none; padding-bottom:0; }
+.step-num { min-width:26px; height:26px; border-radius:50%; background:#1c2a3a;
+  color:var(--blue); font-size:12px; font-weight:800; display:flex; align-items:center; justify-content:center; }
+.step-txt { font-size:13px; color:var(--muted); line-height:1.55; }
+.step-txt strong { color:var(--text); }
+
+h2 { font-size:20px; font-weight:800; text-align:center; }
+p { font-size:13px; color:var(--muted); text-align:center; line-height:1.65; }
+p strong { color:var(--text); }
+.note { font-size:11px; color:var(--muted); text-align:center; opacity:.7; }
+
+/* Butonlar */
+.btn { width:100%; padding:16px; border-radius:14px; border:none; font-size:15px;
+  font-weight:700; cursor:pointer; font-family:inherit; display:flex; align-items:center;
+  justify-content:center; gap:10px; transition:opacity .15s, transform .1s; }
+.btn:active { transform:scale(.97); opacity:.85; }
+.btn-blue  { background:var(--blue); color:#fff; }
+.btn-green { background:var(--green); color:#00140a; }
+.btn-red   { background:var(--red); color:#fff; }
+.btn-outline { background:transparent; border:1px solid var(--border); color:var(--muted); font-size:13px; padding:12px; }
+
+/* Kamera */
+#cam-wrap { width:100%; aspect-ratio:1; border-radius:20px; overflow:hidden;
+  border:2px solid var(--blue); position:relative; background:#000; max-height:300px; }
+#cam-wrap video { width:100%; height:100%; object-fit:cover; }
+.scan-corners { position:absolute; inset:0; pointer-events:none; }
+.scan-corners::before, .scan-corners::after,
+.sc2::before, .sc2::after {
+  content:''; position:absolute; width:24px; height:24px; border-color:var(--blue); border-style:solid; border-width:0;
+}
+.scan-corners::before { top:10px; left:10px; border-top-width:3px; border-left-width:3px; border-radius:4px 0 0 0; }
+.scan-corners::after  { top:10px; right:10px; border-top-width:3px; border-right-width:3px; border-radius:0 4px 0 0; }
+.sc2::before { bottom:10px; left:10px; border-bottom-width:3px; border-left-width:3px; border-radius:0 0 0 4px; }
+.sc2::after  { bottom:10px; right:10px; border-bottom-width:3px; border-right-width:3px; border-radius:0 0 4px 0; }
+.scan-line { position:absolute; left:8%; right:8%; height:2px;
+  background:linear-gradient(90deg,transparent,var(--blue),transparent);
+  animation:scanMove 2s linear infinite; border-radius:2px; }
+@keyframes scanMove { 0%{top:8%} 100%{top:92%} }
+
+/* dB halka */
+.ring-wrap { position:relative; width:200px; height:200px; }
+.ring-wrap svg { width:100%; height:100%; transform:rotate(-90deg); }
+.ring-track { fill:none; stroke:#1c2a1c; stroke-width:13; }
+.ring-bg-glow { fill:none; stroke:#0d1f0d; stroke-width:18; }
+.ring-bar { fill:none; stroke:var(--green); stroke-width:13; stroke-linecap:round;
+  stroke-dasharray:527; stroke-dashoffset:527; transition:stroke-dashoffset .3s, stroke .3s; }
+.ring-label { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; }
+.ring-num { font-size:52px; font-weight:900; line-height:1; }
+.ring-unit { font-size:11px; color:var(--muted); letter-spacing:.5px; text-transform:uppercase; }
+
+/* Durum hapı */
+.status { display:inline-flex; align-items:center; gap:8px; padding:9px 20px;
+  border-radius:999px; font-size:13px; font-weight:600; }
+.st-ok   { background:#0d1f0d; color:var(--green); border:1px solid #1a3a1a; }
+.st-warn { background:#1f0d0d; color:var(--red);   border:1px solid #3a1a1a; }
+.st-mid  { background:#1f1a0d; color:var(--orange); border:1px solid #3a2e1a; }
+.dot { width:7px; height:7px; border-radius:50%; background:currentColor; animation:pulse 1.4s ease-in-out infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.25} }
+
+/* İkon çemberler */
+.icon-circle { width:72px; height:72px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:32px; }
+.ic-blue  { background:#0d1f3a; border:1px solid #1a3a6a; }
+.ic-green { background:#0d1f0d; border:1px solid #1a3a1a; }
+
+/* Tam ekran uyarı */
+#alert-overlay {
+  display:none; position:fixed; inset:0; background:linear-gradient(160deg,#1a0000 0%,#0d0000 100%);
+  z-index:9999; flex-direction:column; align-items:center; justify-content:center;
+  gap:14px; text-align:center; padding:28px;
+}
+.alert-pulse { animation:alertPulse 1s ease-in-out infinite; }
+@keyframes alertPulse { 0%,100%{opacity:1} 50%{opacity:.6} }
+.alert-icon { font-size:80px; }
+.alert-title { color:#e53935; font-size:42px; font-weight:900; line-height:1.1; }
+.alert-db { color:#ff5252; font-size:86px; font-weight:900; line-height:1; }
+.alert-sub { color:#c08080; font-size:16px; max-width:280px; line-height:1.6; }
+.alert-bar { width:80%; height:4px; background:#2a0000; border-radius:2px; overflow:hidden; }
+.alert-bar-fill { height:100%; background:var(--red); border-radius:2px; transition:width .3s; }
+
+@keyframes flashRed { 0%{background:var(--bg)} 50%{background:#1e0000} 100%{background:var(--bg)} }
+body.flash-warn { animation:flashRed .5s ease; }
+#sil { position:fixed; width:1px; height:1px; opacity:.01; pointer-events:none; }
+
+/* Mikrofon ekranı */
+.mic-features { display:flex; flex-direction:column; gap:8px; width:100%; }
+.mic-feat { display:flex; align-items:center; gap:12px; padding:10px 14px;
+  background:var(--card); border:1px solid var(--border); border-radius:12px; }
+.mic-feat-icon { font-size:18px; }
+.mic-feat-txt { font-size:12px; color:var(--muted); }
+</style>
+</head>
+<body>
+
+<audio id="sil" loop autoplay muted playsinline
+  src="data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA="></audio>
+
+<!-- GİRİŞ -->
+<div id="s-intro" class="screen active">
+  <div class="logo">
+    <div class="logo-icon">🔊</div>
+    <div class="logo-text">Öz<em>Bel</em></div>
+  </div>
+  <div class="logo-sub">Kulak Sağlığı Koruma Sistemi</div>
+
+  <div class="card">
+    <div class="card-title">Nasıl Çalışır?</div>
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-txt"><strong>Tahtadaki büyük QR'ı okutun</strong><br>Kamera uygulamasıyla veya aşağıdaki butona basın</div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-txt"><strong>Mikrofon izni verin</strong><br>Ses seviyesi ölçümü için gerekli</div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-txt"><strong>Sistem aktif</strong><br>90 dB'i aşınca tahtada uyarı çıkar</div>
+    </div>
+  </div>
+
+  <button class="btn btn-blue" onclick="startScan()">📷 Karekod Okut</button>
+  <p class="note">Mikrofon yalnızca ses seviyesi ölçümü için kullanılır. Ses kaydedilmez.</p>
+</div>
+
+<!-- KAMERA / TARAMA -->
+<div id="s-scan" class="screen">
+  <div class="logo" style="transform:scale(.8);margin-bottom:-8px">
+    <div class="logo-icon" style="width:30px;height:30px;font-size:16px">🔊</div>
+    <div class="logo-text" style="font-size:20px">Öz<em>Bel</em></div>
+  </div>
+  <h2>Tahtadaki karekodu tarayın</h2>
+  <div id="cam-wrap">
+    <video id="video" playsinline autoplay muted></video>
+    <div class="scan-corners"></div>
+    <div class="sc2"></div>
+    <div class="scan-line"></div>
+  </div>
+  <p>Kamerayı tahtadaki <strong>büyük QR koduna</strong> doğrultun</p>
+  <button class="btn btn-outline" onclick="showScreen('s-intro'); stopCam();">← Geri</button>
+</div>
+
+<!-- MİKROFON -->
+<div id="s-mic" class="screen">
+  <div class="icon-circle ic-blue" style="width:80px;height:80px;font-size:36px">🎤</div>
+  <h2>Mikrofon İzni</h2>
+  <p>Ses seviyesini ölçmek için mikrofon izni gerekli.</p>
+
+  <div class="mic-features">
+    <div class="mic-feat"><div class="mic-feat-icon">✅</div><div class="mic-feat-txt">Ses <strong>kaydedilmez</strong>, yalnızca yükseklik ölçülür</div></div>
+    <div class="mic-feat"><div class="mic-feat-icon">🔒</div><div class="mic-feat-txt">Veriler yalnızca tahtaya iletilir</div></div>
+    <div class="mic-feat"><div class="mic-feat-icon">⚡</div><div class="mic-feat-txt">Ders bitince mikrofon otomatik kapanır</div></div>
+  </div>
+
+  <button class="btn btn-blue" onclick="requestMic()">Mikrofon İzni Ver &amp; Başla</button>
+</div>
+
+<!-- AKTİF -->
+<div id="s-active" class="screen">
+  <div style="display:flex;align-items:center;gap:8px;">
+    <div class="logo-text" style="font-size:18px">Öz<em>Bel</em></div>
+    <span style="font-size:11px;color:var(--green);font-weight:600;background:#0d1f0d;border:1px solid #1a3a1a;padding:3px 10px;border-radius:999px">● Aktif</span>
+  </div>
+
+  <div class="ring-wrap">
+    <svg viewBox="0 0 200 200">
+      <circle class="ring-bg-glow" cx="100" cy="100" r="84"/>
+      <circle class="ring-track" cx="100" cy="100" r="84"/>
+      <circle class="ring-bar" cx="100" cy="100" r="84" id="ring-arc"/>
+    </svg>
+    <div class="ring-label">
+      <div class="ring-num" id="ring-num">—</div>
+      <div class="ring-unit">desibel</div>
+    </div>
+  </div>
+
+  <div class="status st-ok" id="status-pill"><div class="dot"></div><span id="status-txt">Normal Seviye</span></div>
+
+  <button class="btn btn-red" onclick="lessonEnd()">🏁 Dersi Bitir</button>
+  <p class="note">Telefon ekranı açık kalmalı — ölçüm devam eder.</p>
+</div>
+
+<!-- BİTTİ -->
+<div id="s-done" class="screen">
+  <div class="icon-circle ic-green" style="width:88px;height:88px;font-size:40px">🏁</div>
+  <h2>Ders Tamamlandı</h2>
+  <p>Mikrofon kapatıldı.<br>Sayfayı güvenle kapatabilirsiniz.</p>
+  <div class="card" style="text-align:center;padding:14px;">
+    <div style="font-size:12px;color:var(--muted)">ÖzBel ile sağlıklı bir ders geçirdiniz 👍</div>
+  </div>
+</div>
+
+<!-- HATA -->
+<div id="s-error" class="screen">
+  <div class="icon-circle" style="width:80px;height:80px;font-size:36px;background:#1f0d0d;border:1px solid #3a1a1a">⚠️</div>
+  <h2 id="err-title">Hata</h2>
+  <p id="err-msg"></p>
+  <button class="btn btn-outline" onclick="location.reload()">Yeniden Dene</button>
+</div>
+
+<!-- TAM EKRAN UYARI -->
+<div id="alert-overlay">
+  <div class="alert-icon alert-pulse">🔇</div>
+  <div class="alert-title">Lütfen<br>Sessiz Olun!</div>
+  <div id="alert-db-num" class="alert-db">— dB</div>
+  <div class="alert-bar"><div class="alert-bar-fill" id="alert-bar-fill" style="width:0%"></div></div>
+  <div class="alert-sub">Kulak sağlığınız için ses seviyesi 90 dB'nin altında olmalı</div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+<script>
+'use strict';
+
+// ═══════════════ CONFIG ═══════════════
+const FIREBASE_DB = "https://ozbel-eb6af-default-rtdb.europe-west1.firebasedatabase.app";
+const CALIB = 97;
+// ═══════════════════════════════════════
+
+const $ = id => document.getElementById(id);
+const CIRC = 2 * Math.PI * 84;
+
+let audioCtx=null, analyser=null, rafId=null, es=null;
+let camStream=null, scanRafId=null;
+let lastSend=0, ended=false, dbSmooth=0;
+let alertHideTimer=null;
+let sessionId = new URLSearchParams(location.search).get('s');
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  $(id).classList.add('active');
+}
+function showError(title, msg) {
+  $('err-title').textContent = title; $('err-msg').textContent = msg; showScreen('s-error');
+}
+
+// ── QR Tarama ──
+async function startScan() {
+  showScreen('s-scan');
+  try {
+    camStream = await navigator.mediaDevices.getUserMedia({ video:{ facingMode:'environment' }, audio:false });
+    const v = $('video'); v.srcObject = camStream; await v.play();
+    scanFrame();
+  } catch {
+    showError('Kamera Hatası', 'Kamera erişimi reddedildi. Tarayıcı izinlerini kontrol edin.');
+  }
+}
+function scanFrame() {
+  const v = $('video');
+  if (!v.videoWidth) { scanRafId = requestAnimationFrame(scanFrame); return; }
+  const c = document.createElement('canvas');
+  c.width = v.videoWidth; c.height = v.videoHeight;
+  const ctx = c.getContext('2d'); ctx.drawImage(v, 0, 0);
+  const img = ctx.getImageData(0, 0, c.width, c.height);
+  const code = jsQR(img.data, img.width, img.height, { inversionAttempts:'dontInvert' });
+  if (code) {
+    let s = null;
+    try { s = new URL(code.data).searchParams.get('s'); } catch (_) {}
+    if (!s && code.data.trim().length >= 4) s = code.data.trim();
+    if (s) { sessionId = s; stopCam(); showScreen('s-mic'); return; }
+  }
+  scanRafId = requestAnimationFrame(scanFrame);
+}
+function stopCam() {
+  cancelAnimationFrame(scanRafId);
+  camStream && camStream.getTracks().forEach(t => t.stop());
+  camStream = null;
+}
+
+// ── Firebase ──
+function fbPut(key, value) {
+  return fetch(`${FIREBASE_DB}/sessions/${sessionId}/${key}.json`,
+    { method:'PUT', body:JSON.stringify(value), keepalive:true }).catch(() => {});
+}
+
+// ── Mikrofon ──
+async function requestMic() {
+  if (!sessionId) { showError('Oturum Yok', 'Önce tahtadaki karekodu okutun.'); return; }
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio:true, video:false });
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    analyser = audioCtx.createAnalyser();
+    analyser.fftSize = 2048; analyser.smoothingTimeConstant = 0.4;
+    audioCtx.createMediaStreamSource(stream).connect(analyser);
+    $('sil').play().catch(() => {});
+    await fbPut('teacher', true);
+    await fbPut('mic', true);
+    listenControl();
+    showScreen('s-active');
+    startMeasuring();
+  } catch (err) {
+    if (err.name === 'NotAllowedError')
+      showError('Mikrofon İzni Reddedildi', 'Tarayıcı ayarlarından mikrofon iznini açıp sayfayı yenileyin.');
+    else showError('Mikrofon Hatası', err.message);
+  }
+}
+
+function listenControl() {
+  try {
+    es = new EventSource(`${FIREBASE_DB}/sessions/${sessionId}/control.json`);
+    const h = e => { try { const d = JSON.parse(e.data); if (d && d.data === 'disconnect') finish(); } catch (_) {} };
+    es.addEventListener('put', h); es.addEventListener('patch', h);
+  } catch (_) {}
+}
+
+function startMeasuring() {
+  const buf = new Float32Array(analyser.fftSize);
+  function tick(now) {
+    if (ended) return;
+    analyser.getFloatTimeDomainData(buf);
+    let sum = 0; for (let i=0;i<buf.length;i++) sum += buf[i]*buf[i];
+    const rms = Math.sqrt(sum/buf.length);
+    const raw = rms > 0.00001 ? Math.min(120, Math.max(0, 20*Math.log10(rms)+CALIB)) : 0;
+    dbSmooth = dbSmooth ? dbSmooth*0.75 + raw*0.25 : raw;
+    const db = Math.round(dbSmooth);
+    updateRing(db);
+    if (now - lastSend >= 200) { fbPut('db', db); lastSend = now; }
+    rafId = requestAnimationFrame(tick);
+  }
+  rafId = requestAnimationFrame(tick);
+}
+
+function updateRing(db) {
+  $('ring-num').textContent = db;
+  $('ring-arc').style.strokeDashoffset = CIRC * (1 - Math.min(1, db/120));
+  const arc=$('ring-arc'), pill=$('status-pill'), txt=$('status-txt');
+  if (db >= 90) {
+    arc.style.stroke='#e53935'; pill.className='status st-warn'; txt.textContent='⚠️ Çok Gürültülü!';
+    $('alert-db-num').textContent = db + ' dB';
+    $('alert-bar-fill').style.width = Math.min(100, db) + '%';
+    $('alert-overlay').style.display = 'flex';
+    if (alertHideTimer) clearTimeout(alertHideTimer);
+    alertHideTimer = setTimeout(() => { $('alert-overlay').style.display='none'; alertHideTimer=null; }, 5000);
+  } else if (db >= 70) {
+    arc.style.stroke='#ff8f00'; pill.className='status st-mid'; txt.textContent='Dikkat — Yüksek Ses';
+  } else {
+    arc.style.stroke='#1db954'; pill.className='status st-ok'; txt.textContent='Normal Seviye';
+  }
+}
+
+function lessonEnd() { fbPut('lesson', 'end'); finish(); }
+function finish() {
+  if (ended) return; ended = true;
+  cancelAnimationFrame(rafId);
+  try { es && es.close(); } catch (_) {}
+  try { audioCtx && audioCtx.close(); } catch (_) {}
+  fbPut('teacher', false);
+  showScreen('s-done');
+}
+
+async function keepAwake() {
+  try { if ('wakeLock' in navigator) {
+    await navigator.wakeLock.request('screen');
+    document.addEventListener('visibilitychange', async () => {
+      if (document.visibilityState === 'visible') await navigator.wakeLock.request('screen').catch(()=>{});
+    });
+  }} catch (_) {}
+}
+keepAwake();
+window.addEventListener('pagehide', () => { if (!ended) fbPut('teacher', false); });
+
+if (sessionId) showScreen('s-mic');
+</script>
+</body>
+</html>

@@ -1,0 +1,95 @@
+# ÖzBel — Firebase + Netlify Kurulumu
+
+Farklı internetlerde (tahta FATİH, telefon 4G) çalışması için iki ücretsiz servis:
+- **Firebase** → cihazların buluştuğu relay (realtime veritabanı)
+- **Netlify** → öğretmen sayfasının (`teacher.html`) barındığı yer
+
+---
+
+## 1) Firebase projesi oluştur (5 dk)
+
+1. https://console.firebase.google.com → **Proje ekle** → isim: `ozbel` → oluştur
+2. Sol menü → **Build → Realtime Database** → **Veritabanı oluştur**
+3. Konum seç (Avrupa: `europe-west1`) → **Test modunda başlat** → Etkinleştir
+4. Açılan veritabanı adresini kopyala, şuna benzer:
+   ```
+   https://ozbel-xxxx-default-rtdb.firebaseio.com
+   ```
+
+### Kuralları ayarla (Rules sekmesi)
+Test modu 30 günde kapanır. Kalıcı olması için **Rules** sekmesine şunu yapıştır → **Yayınla**:
+```json
+{
+  "rules": {
+    "sessions": {
+      ".read": true,
+      ".write": true
+    }
+  }
+}
+```
+> Not: Sadece geçici dB sayıları tutulur, kişisel veri yok. Basit tutmak için açık bırakıldı.
+
+---
+
+## 2) Netlify'a öğretmen sayfasını yükle (3 dk)
+
+1. `teacher.html` dosyasının adını **`index.html`** yap (kopyasını al, yeniden adlandır)
+2. İçindeki `FIREBASE_DB` satırına kendi Firebase adresini yaz:
+   ```js
+   const FIREBASE_DB = "https://ozbel-xxxx-default-rtdb.firebaseio.com";
+   ```
+3. https://app.netlify.com → giriş yap → **Add new site → Deploy manually**
+4. `index.html`'i sürükle bırak → site yayınlanır, adres alırsın:
+   ```
+   https://ozbel-xxxx.netlify.app
+   ```
+
+---
+
+## 3) Tahta uygulamasını yapılandır
+
+`ozbel.py` dosyasının başındaki **CONFIG** bölümünü doldur:
+```python
+FIREBASE_DB = "https://ozbel-xxxx-default-rtdb.firebaseio.com"
+NETLIFY_URL = "https://ozbel-xxxx.netlify.app"
+```
+
+> Her iki adresin sonunda **/ olmamalı**.
+
+---
+
+## 4) .deb paketini üret ve kur
+
+```bash
+bash build-deb.sh
+```
+Çıkan `ozbel_1.0.0_all.deb` → Pardus'ta çift tıkla → Yükle.
+
+---
+
+## Çalışma Akışı
+
+```
+Tahta açılır → ÖzBel native uygulaması → ekranda QR + kod
+        │
+Öğretmen telefon kamerasıyla QR'ı okutur (4G yeterli)
+        │
+Netlify sayfası açılır → Mikrofon izni
+        │
+Telefon dB'yi Firebase'e yazar ──► Tahta Firebase'den okur
+        │
+90 dB+ → Tahtada tam ekran uyarı 🔇
+        │
+"Ders Bitti" / "Bağlantıyı Kes" → mikrofon kapanır
+```
+
+## Test
+1. `ozbel.py`'yi bilgisayarında çalıştır: `python3 ozbel.py`
+2. Telefonda QR'ı okut, mikrofon ver
+3. Bağır → tahtada uyarı çıkmalı
+
+## Sorun Giderme
+- **QR'da hâlâ XXXX**: CONFIG'i doldurmadın.
+- **Telefon "Oturum Yok"**: QR'ı kamerayla değil de elle açtın; QR adresi `?s=KOD` içermeli.
+- **Uyarı gelmiyor**: Firebase Rules yayınlanmamış olabilir; Database → Data'da `sessions/KOD/db` değerinin değiştiğini kontrol et.
