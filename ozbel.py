@@ -26,7 +26,7 @@ FIREBASE_DB = "https://ozbel-eb6af-default-rtdb.europe-west1.firebasedatabase.ap
 NETLIFY_URL = "https://glistening-fudge-bca794.netlify.app"
 # ══════════════════════════════════════════════════════════════
 
-APP_VERSION = "1.1.0"
+APP_VERSION = "1.1.1"
 UPDATE_JSON = "https://raw.githubusercontent.com/ozguroyunuzmn/ozbel/main/version.json"
 
 SESSION   = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
@@ -117,73 +117,57 @@ def make_qr(data, size):
         return None
 
 
-CSS = """
-window, .screen-bg { background-color:#0d1117; }
-
-/* Tipografi */
-.logo-text  { color:#e6edf3; font-size:42px; font-weight:900; letter-spacing:-1px; }
-.logo-blue  { color:#1a73e8; font-size:42px; font-weight:900; letter-spacing:-1px; }
-.subtitle   { color:#8b949e; font-size:13px; }
-.section-title { color:#e6edf3; font-size:18px; font-weight:700; }
-.code       { color:#1a73e8; font-size:30px; font-weight:900; letter-spacing:4px; }
-.qrlabel    { color:#8b949e; font-size:11px; }
-.version    { color:#30363d; font-size:11px; }
-
-/* Durum hapı */
-.pill       { color:#7090d0; font-size:13px; font-weight:600;
-              background:#0d1629; border:1px solid #1e2d4a;
-              border-radius:999px; padding:6px 16px; }
-.pill-ok    { color:#1db954; font-size:13px; font-weight:600;
-              background:#0d1f0d; border:1px solid #1a3a1a;
-              border-radius:999px; padding:6px 16px; }
-
-/* Kart */
-.card { background-color:#161b22; border:1px solid #21262d;
-        border-radius:16px; padding:20px; }
-.card-title { color:#e6edf3; font-size:15px; font-weight:700; }
-.step-num   { color:#1a73e8; font-size:11px; font-weight:800;
-              background:#0d1f3a; border:1px solid #1a3a6a;
-              border-radius:999px; padding:2px 8px; }
-.step-txt   { color:#8b949e; font-size:12px; }
-.step-txt-b { color:#e6edf3; font-size:12px; font-weight:700; }
-
-/* dB göstergesi */
-.db-huge  { color:#e6edf3; font-size:72px; font-weight:900; }
-.db-unit  { color:#8b949e; font-size:16px; }
-.db-live  { color:#e6edf3; font-size:38px; font-weight:900; }
-.db-ok    { color:#1db954; font-size:38px; font-weight:900; }
-.db-warn  { color:#e53935; font-size:38px; font-weight:900; }
-.db-mid   { color:#ff8f00; font-size:38px; font-weight:900; }
-
-/* Hazır ekranı */
-.ready-label { color:#1db954; font-size:20px; font-weight:700;
-               background:#0d1f0d; border:1px solid #1a3a1a;
-               border-radius:999px; padding:8px 24px; }
-.ready-sub   { color:#8b949e; font-size:14px; }
-
-/* Butonlar */
-button.outline { background:transparent; color:#8b949e;
-                 border:1px solid #30363d; border-radius:10px; padding:8px 20px; }
-button.outline:hover { color:#e6edf3; border-color:#8b949e; }
-button.green  { background:#1db954; color:#00140a; border-radius:12px;
-                padding:12px 32px; font-weight:700; border:none; font-size:14px; }
-button.red    { background:#e53935; color:#fff; border-radius:12px;
-                padding:12px 32px; font-weight:700; border:none; font-size:14px; }
-button.blue   { background:#1a73e8; color:#fff; border-radius:12px;
-                padding:10px 24px; font-weight:700; border:none; font-size:13px; }
-
-/* Uyarı ekranı */
-.alert-win   { background-color:#0d0000; }
-.alert-title { color:#ff1744; font-size:56px; font-weight:900; }
-.alert-db    { color:#ff5252; font-size:110px; font-weight:900; }
-.alert-unit  { color:#c08080; font-size:28px; font-weight:600; }
-.alert-sub   { color:#a06060; font-size:20px; }
-"""
+CSS = (
+"window, .screen-bg { background-color:#0d1117; }\n"
+".logo-text  { color:#e6edf3; font-size:42px; font-weight:900; letter-spacing:-1px; }\n"
+".logo-blue  { color:#1a73e8; font-size:42px; font-weight:900; letter-spacing:-1px; }\n"
+".subtitle   { color:#8b949e; font-size:13px; }\n"
+".code       { color:#1a73e8; font-size:30px; font-weight:900; letter-spacing:4px; }\n"
+".qrlabel    { color:#8b949e; font-size:11px; }\n"
+".version    { color:#30363d; font-size:11px; }\n"
+".pill       { color:#7090d0; font-size:13px; font-weight:600;"
+"              background:#0d1629; border:1px solid #1e2d4a;"
+"              border-radius:999px; padding:6px 16px; }\n"
+".pill-ok    { color:#1db954; font-size:13px; font-weight:600;"
+"              background:#0d1f0d; border:1px solid #1a3a1a;"
+"              border-radius:999px; padding:6px 16px; }\n"
+".card { background-color:#161b22; border:1px solid #21262d;"
+"        border-radius:16px; padding:20px; }\n"
+".card-title { color:#e6edf3; font-size:15px; font-weight:700; }\n"
+".step-num   { color:#1a73e8; font-size:11px; font-weight:800;"
+"              background:#0d1f3a; border:1px solid #1a3a6a;"
+"              border-radius:999px; padding:2px 8px; }\n"
+".step-txt   { color:#8b949e; font-size:12px; }\n"
+".step-txt-b { color:#e6edf3; font-size:12px; font-weight:700; }\n"
+".db-huge  { color:#e6edf3; font-size:72px; font-weight:900; }\n"
+".db-unit  { color:#8b949e; font-size:16px; }\n"
+".db-live  { color:#e6edf3; font-size:38px; font-weight:900; }\n"
+".db-ok    { color:#1db954; font-size:38px; font-weight:900; }\n"
+".db-warn  { color:#e53935; font-size:38px; font-weight:900; }\n"
+".db-mid   { color:#ff8f00; font-size:38px; font-weight:900; }\n"
+".ready-label { color:#1db954; font-size:20px; font-weight:700;"
+"               background:#0d1f0d; border:1px solid #1a3a1a;"
+"               border-radius:999px; padding:8px 24px; }\n"
+".ready-sub   { color:#8b949e; font-size:14px; }\n"
+"button.outline { background:transparent; color:#8b949e;"
+"                 border:1px solid #30363d; border-radius:10px; padding:8px 20px; }\n"
+"button.green  { background:#1db954; color:#00140a; border-radius:12px;"
+"                padding:12px 32px; font-weight:700; border:none; font-size:14px; }\n"
+"button.red    { background:#e53935; color:#fff; border-radius:12px;"
+"                padding:12px 32px; font-weight:700; border:none; font-size:14px; }\n"
+"button.blue   { background:#1a73e8; color:#fff; border-radius:12px;"
+"                padding:10px 24px; font-weight:700; border:none; font-size:13px; }\n"
+".alert-win   { background-color:#0d0000; }\n"
+".alert-title { color:#ff1744; font-size:56px; font-weight:900; }\n"
+".alert-db    { color:#ff5252; font-size:110px; font-weight:900; }\n"
+".alert-unit  { color:#c08080; font-size:28px; font-weight:600; }\n"
+".alert-sub   { color:#a06060; font-size:20px; }\n"
+)
 
 
 class OzBelApp:
     def __init__(self):
-        provider = Gtk.CssProvider(); provider.load_from_data(CSS.encode('utf-8'))
+        provider = Gtk.CssProvider(); provider.load_from_data(CSS.encode())
         Gtk.StyleContext.add_provider_for_screen(
             Gdk.Screen.get_default(), provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
 
