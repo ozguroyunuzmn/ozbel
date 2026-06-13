@@ -26,7 +26,7 @@ FIREBASE_DB = "https://ozbel-eb6af-default-rtdb.europe-west1.firebasedatabase.ap
 NETLIFY_URL = "https://glistening-fudge-bca794.netlify.app"
 # ══════════════════════════════════════════════════════════════
 
-APP_VERSION = "1.0.5"
+APP_VERSION = "1.0.6"
 UPDATE_JSON = "https://raw.githubusercontent.com/ozguroyunuzmn/ozbel/main/version.json"
 
 SESSION   = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
@@ -166,8 +166,10 @@ class OzBelApp:
         self.win.show_all()
         self.stack.set_visible_child_name("setup")
 
-        self.alert_open = False
-        self.alert_src  = None
+        self.alert_open  = False
+        self.alert_src   = None
+        self.alert_count = 0
+        self.alert_max_db = 0
 
         self.relay = FirebaseRelay(self)
         self.relay.start()
@@ -453,9 +455,32 @@ class OzBelApp:
             self.show_alert(db)
 
     def on_lesson_end(self):
+        self.hide_alert()
+        self.show_lesson_summary()
         self.restore_main()
         self.pill.set_text("●  Öğretmen bekleniyor…")
-        self.hide_alert()
+        self.alert_count  = 0
+        self.alert_max_db = 0
+
+    def show_lesson_summary(self):
+        if self.alert_count == 0:
+            msg  = "Bu ders boyunca hiç gürültü uyarısı verilmedi. 👏"
+            sec  = "Sınıf tüm ders boyunca 90 dB sınırının altında kaldı."
+        else:
+            msg  = f"Ders Özeti — {self.alert_count} kez uyarı verildi"
+            sec  = (
+                f"🔔  Uyarı sayısı   : {self.alert_count} kez\n"
+                f"📈  En yüksek ses  : {self.alert_max_db} dB\n\n"
+                f"Kulak sağlığı için ses seviyesinin 90 dB altında tutulması önerilir."
+            )
+        dlg = Gtk.MessageDialog(
+            transient_for=self.win,
+            message_type=Gtk.MessageType.INFO,
+            buttons=Gtk.ButtonsType.OK,
+            text=msg)
+        dlg.format_secondary_text(sec)
+        dlg.run()
+        dlg.destroy()
 
     def restore_main(self):
         # Tepsiden ana pencereye geri dön
@@ -469,11 +494,14 @@ class OzBelApp:
     # ── Uyarı ──
     def show_alert(self, db):
         self.alert_db.set_text(f"{db}  dB")
+        if db > self.alert_max_db:
+            self.alert_max_db = db
         if not self.alert_open:
-            self.alert_open = True
+            self.alert_open  = True
+            self.alert_count += 1
             self.stack.set_visible_child_name("alert")
             self.win.show_all()
-            self.win.maximize()
+            self.win.fullscreen()
             self.win.present()
         if self.alert_src:
             GLib.source_remove(self.alert_src)
@@ -485,6 +513,7 @@ class OzBelApp:
     def hide_alert(self):
         if self.alert_open:
             self.alert_open = False
+            self.win.unfullscreen()
             self.stack.set_visible_child_name("ready")
             self.win.hide()
 

@@ -1,7 +1,9 @@
 {
-  "version": "1.0.5",
+  "version": "1.0.6",
   "url": "https://raw.githubusercontent.com/ozguroyunuzmn/ozbel/main/ozbel.py",
   "changelog": [
+    "Uyarı tam ekran modunda açılır hale getirildi",
+    "Ders bitince kaç kez uyarı verildiği ve en yüksek dB özet olarak gösterilir",
     "90 dB uyarısı tahtada görünmüyordu hatası düzeltildi (pencere gizliyken açılmıyordu)",
     "Telefon ekranındaki gereksiz tam ekran uyarı kaldırıldı — uyarı yalnızca tahtada gösterilir",
     "Güncelleme sudo/pkexec gerektirmeden kullanıcı klasörüne indirilir hale getirildi",
