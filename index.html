@@ -96,20 +96,6 @@ p strong { color:var(--text); }
 .ic-blue  { background:#0d1f3a; border:1px solid #1a3a6a; }
 .ic-green { background:#0d1f0d; border:1px solid #1a3a1a; }
 
-/* Tam ekran uyarı */
-#alert-overlay {
-  display:none; position:fixed; inset:0; background:linear-gradient(160deg,#1a0000 0%,#0d0000 100%);
-  z-index:9999; flex-direction:column; align-items:center; justify-content:center;
-  gap:14px; text-align:center; padding:28px;
-}
-.alert-pulse { animation:alertPulse 1s ease-in-out infinite; }
-@keyframes alertPulse { 0%,100%{opacity:1} 50%{opacity:.6} }
-.alert-icon { font-size:80px; }
-.alert-title { color:#e53935; font-size:42px; font-weight:900; line-height:1.1; }
-.alert-db { color:#ff5252; font-size:86px; font-weight:900; line-height:1; }
-.alert-sub { color:#c08080; font-size:16px; max-width:280px; line-height:1.6; }
-.alert-bar { width:80%; height:4px; background:#2a0000; border-radius:2px; overflow:hidden; }
-.alert-bar-fill { height:100%; background:var(--red); border-radius:2px; transition:width .3s; }
 
 @keyframes flashRed { 0%{background:var(--bg)} 50%{background:#1e0000} 100%{background:var(--bg)} }
 body.flash-warn { animation:flashRed .5s ease; }
@@ -231,14 +217,6 @@ body.flash-warn { animation:flashRed .5s ease; }
   <button class="btn btn-outline" onclick="location.reload()">Yeniden Dene</button>
 </div>
 
-<!-- TAM EKRAN UYARI -->
-<div id="alert-overlay">
-  <div class="alert-icon alert-pulse">🔇</div>
-  <div class="alert-title">Lütfen<br>Sessiz Olun!</div>
-  <div id="alert-db-num" class="alert-db">— dB</div>
-  <div class="alert-bar"><div class="alert-bar-fill" id="alert-bar-fill" style="width:0%"></div></div>
-  <div class="alert-sub">Kulak sağlığınız için ses seviyesi 90 dB'nin altında olmalı</div>
-</div>
 
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
 <script>
@@ -255,7 +233,7 @@ const CIRC = 2 * Math.PI * 84;
 let audioCtx=null, analyser=null, rafId=null, es=null;
 let camStream=null, scanRafId=null;
 let lastSend=0, ended=false, dbSmooth=0;
-let alertHideTimer=null;
+
 let sessionId = new URLSearchParams(location.search).get('s');
 
 function showScreen(id) {
@@ -358,11 +336,6 @@ function updateRing(db) {
   const arc=$('ring-arc'), pill=$('status-pill'), txt=$('status-txt');
   if (db >= 90) {
     arc.style.stroke='#e53935'; pill.className='status st-warn'; txt.textContent='⚠️ Çok Gürültülü!';
-    $('alert-db-num').textContent = db + ' dB';
-    $('alert-bar-fill').style.width = Math.min(100, db) + '%';
-    $('alert-overlay').style.display = 'flex';
-    if (alertHideTimer) clearTimeout(alertHideTimer);
-    alertHideTimer = setTimeout(() => { $('alert-overlay').style.display='none'; alertHideTimer=null; }, 5000);
   } else if (db >= 70) {
     arc.style.stroke='#ff8f00'; pill.className='status st-mid'; txt.textContent='Dikkat — Yüksek Ses';
   } else {

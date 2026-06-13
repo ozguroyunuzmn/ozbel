@@ -1,7 +1,8 @@
 {
-  "version": "1.0.3",
+  "version": "1.0.4",
   "url": "https://raw.githubusercontent.com/ozguroyunuzmn/ozbel/main/ozbel.py",
   "changelog": [
+    "Telefon ekranındaki gereksiz tam ekran uyarı kaldırıldı — uyarı yalnızca tahtada gösterilir",
     "Güncelleme sudo/pkexec gerektirmeden kullanıcı klasörüne indirilir hale getirildi",
     "Uyarı ekranı tam ekran kapsar hale getirildi",
     "Sağ alta kamera ile okunabilir QR kodu eklendi",
