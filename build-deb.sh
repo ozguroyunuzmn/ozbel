@@ -22,8 +22,13 @@ install -m 644 ozbel.py "$PKG/opt/ozbel/"
 # /usr/bin/ozbel başlatıcı
 cat > "$PKG/usr/bin/ozbel" << 'BIN'
 #!/bin/bash
-# Zaten çalışıyorsa öne getir, değilse başlat
-exec python3 /opt/ozbel/ozbel.py "$@"
+# Güncelleme varsa kullanıcı klasöründeki yeni sürümü çalıştır
+USER_PY="$HOME/.local/share/ozbel/ozbel.py"
+if [ -f "$USER_PY" ]; then
+  exec python3 "$USER_PY" "$@"
+else
+  exec python3 /opt/ozbel/ozbel.py "$@"
+fi
 BIN
 chmod 755 "$PKG/usr/bin/ozbel"
 

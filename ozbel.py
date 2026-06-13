@@ -26,7 +26,7 @@ FIREBASE_DB = "https://ozbel-eb6af-default-rtdb.europe-west1.firebasedatabase.ap
 NETLIFY_URL = "https://glistening-fudge-bca794.netlify.app"
 # ══════════════════════════════════════════════════════════════
 
-APP_VERSION = "1.0.2"
+APP_VERSION = "1.0.3"
 UPDATE_JSON = "https://raw.githubusercontent.com/ozguroyunuzmn/ozbel/main/version.json"
 
 SESSION   = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
@@ -269,23 +269,13 @@ class OzBelApp:
     def _do_install_update(self, py_url):
         GLib.idle_add(self._show_updating)
         try:
-            # Yeni ozbel.py'yi geçici klasöre indir
-            tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".py", mode='wb')
-            urllib.request.urlretrieve(py_url, tmp.name)
-            tmp.close()
-            os.chmod(tmp.name, 0o755)
-
-            current = os.path.abspath(__file__)
-
-            # Yetkili kopyalama — pkexec grafik şifre kutusu gösterir
-            result = subprocess.run(
-                ["pkexec", "cp", tmp.name, current],
-                timeout=60)
-            os.unlink(tmp.name)
-
-            if result.returncode != 0:
-                GLib.idle_add(self._update_dialog, "error", "Yetki reddedildi veya kopyalama başarısız.")
-                return
+            # Kullanıcı klasörüne indir — sudo gerekmez
+            user_dir = os.path.join(os.path.expanduser("~"), ".local", "share", "ozbel")
+            os.makedirs(user_dir, exist_ok=True)
+            dest = os.path.join(user_dir, "ozbel.py")
+            urllib.request.urlretrieve(py_url, dest)
+            os.chmod(dest, 0o755)
+            self._update_dest = dest
         except Exception as e:
             GLib.idle_add(self._update_dialog, "error", f"İndirme hatası: {e}")
             return
@@ -306,7 +296,9 @@ class OzBelApp:
         except Exception: pass
         try: self.relay.running = False
         except Exception: pass
-        os.execv(sys.executable, [sys.executable, os.path.abspath(__file__)])
+        # Kullanıcı klasöründeki yeni dosyayı çalıştır
+        new_file = getattr(self, '_update_dest', os.path.abspath(__file__))
+        os.execv(sys.executable, [sys.executable, new_file])
 
     def build_tray(self):
         try:
