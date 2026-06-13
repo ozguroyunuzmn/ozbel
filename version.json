@@ -1,7 +1,8 @@
 {
-  "version": "1.0.1",
+  "version": "1.0.2",
   "url": "https://raw.githubusercontent.com/ozguroyunuzmn/ozbel/main/ozbel.py",
   "changelog": [
+    "Güncelleme kurulumu /opt klasörü yetki hatası düzeltildi (pkexec ile yetki isteniyor)",
     "Uyarı ekranı tam ekran kapsar hale getirildi",
     "Sağ alta kamera ile okunabilir QR kodu eklendi",
     "Sol alta Güncelleme Denetle butonu eklendi",

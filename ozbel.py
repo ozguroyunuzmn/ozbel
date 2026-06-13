@@ -26,7 +26,7 @@ FIREBASE_DB = "https://ozbel-eb6af-default-rtdb.europe-west1.firebasedatabase.ap
 NETLIFY_URL = "https://glistening-fudge-bca794.netlify.app"
 # ══════════════════════════════════════════════════════════════
 
-APP_VERSION = "1.0.1"
+APP_VERSION = "1.0.2"
 UPDATE_JSON = "https://raw.githubusercontent.com/ozguroyunuzmn/ozbel/main/version.json"
 
 SESSION   = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
@@ -269,16 +269,23 @@ class OzBelApp:
     def _do_install_update(self, py_url):
         GLib.idle_add(self._show_updating)
         try:
-            # Yeni ozbel.py'yi indir
-            tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".py")
+            # Yeni ozbel.py'yi geçici klasöre indir
+            tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".py", mode='wb')
             urllib.request.urlretrieve(py_url, tmp.name)
             tmp.close()
+            os.chmod(tmp.name, 0o755)
 
-            # Mevcut dosyayı yedekle ve değiştir
             current = os.path.abspath(__file__)
-            shutil.copy2(current, current + ".bak")
-            shutil.move(tmp.name, current)
-            os.chmod(current, 0o755)
+
+            # Yetkili kopyalama — pkexec grafik şifre kutusu gösterir
+            result = subprocess.run(
+                ["pkexec", "cp", tmp.name, current],
+                timeout=60)
+            os.unlink(tmp.name)
+
+            if result.returncode != 0:
+                GLib.idle_add(self._update_dialog, "error", "Yetki reddedildi veya kopyalama başarısız.")
+                return
         except Exception as e:
             GLib.idle_add(self._update_dialog, "error", f"İndirme hatası: {e}")
             return
