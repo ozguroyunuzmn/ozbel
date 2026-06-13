@@ -26,7 +26,7 @@ FIREBASE_DB = "https://ozbel-eb6af-default-rtdb.europe-west1.firebasedatabase.ap
 NETLIFY_URL = "https://glistening-fudge-bca794.netlify.app"
 # ══════════════════════════════════════════════════════════════
 
-APP_VERSION = "1.0.4"
+APP_VERSION = "1.0.5"
 UPDATE_JSON = "https://raw.githubusercontent.com/ozguroyunuzmn/ozbel/main/version.json"
 
 SESSION   = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
@@ -472,6 +472,9 @@ class OzBelApp:
         if not self.alert_open:
             self.alert_open = True
             self.stack.set_visible_child_name("alert")
+            self.win.show_all()
+            self.win.maximize()
+            self.win.present()
         if self.alert_src:
             GLib.source_remove(self.alert_src)
         self.alert_src = GLib.timeout_add_seconds(6, self._auto_hide)
@@ -482,11 +485,8 @@ class OzBelApp:
     def hide_alert(self):
         if self.alert_open:
             self.alert_open = False
-            # Önceki ekrana geri dön
-            if self.win.get_visible():
-                self.stack.set_visible_child_name("ready")
-            else:
-                self.stack.set_visible_child_name("setup")
+            self.stack.set_visible_child_name("ready")
+            self.win.hide()
 
     def disconnect_teacher(self, *_):
         self.relay.put("control", "disconnect")
