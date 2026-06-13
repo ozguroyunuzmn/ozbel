@@ -26,7 +26,7 @@ FIREBASE_DB = "https://ozbel-eb6af-default-rtdb.europe-west1.firebasedatabase.ap
 NETLIFY_URL = "https://glistening-fudge-bca794.netlify.app"
 # ══════════════════════════════════════════════════════════════
 
-APP_VERSION = "1.0.8"
+APP_VERSION = "1.0.9"
 UPDATE_JSON = "https://raw.githubusercontent.com/ozguroyunuzmn/ozbel/main/version.json"
 
 SESSION   = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
@@ -338,14 +338,16 @@ class OzBelApp:
     def _restart_app(self):
         try: self._updating_dlg.destroy()
         except Exception: pass
+        new_file = getattr(self, '_update_dest', os.path.abspath(__file__))
+        subprocess.Popen(["python3", new_file],
+                         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        GLib.timeout_add(800, self._do_quit)
+
+    def _do_quit(self):
         try: self.relay.running = False
         except Exception: pass
-        new_file = getattr(self, '_update_dest', os.path.abspath(__file__))
-        try:
-            os.execvp("python3", ["python3", new_file])
-        except Exception:
-            subprocess.Popen(["python3", new_file])
-            Gtk.main_quit()
+        Gtk.main_quit()
+        return False
 
     def build_tray(self):
         try:
