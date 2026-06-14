@@ -145,13 +145,22 @@ body.flash-warn { animation:flashRed .5s ease; }
 /* Hassasiyet ayarı */
 .sens-wrap { width:100%; background:var(--card); border:1px solid var(--border);
   border-radius:16px; padding:16px 18px; backdrop-filter:blur(10px); }
-.sens-label { font-size:12px; color:var(--muted); margin-bottom:10px;
-  display:flex; justify-content:space-between; align-items:center; }
-.sens-label span { font-size:15px; font-weight:800; color:#60a5fa;
-  font-variant-numeric:tabular-nums; }
-input[type=range] { width:100%; accent-color:var(--blue); height:6px; cursor:pointer; }
-.sens-ticks { display:flex; justify-content:space-between;
-  font-size:10px; color:var(--muted); margin-top:6px; }
+.sens-title { font-size:13px; font-weight:800; color:var(--text); margin-bottom:12px; }
+.sens-opts { display:flex; flex-direction:column; gap:8px; }
+.sens-opts button { width:100%; padding:13px 16px; border-radius:12px; cursor:pointer;
+  font-family:inherit; font-size:14px; font-weight:700; text-align:left;
+  background:rgba(255,255,255,.03); border:1px solid var(--border); color:var(--muted);
+  display:flex; align-items:center; gap:10px;
+  transition:transform .12s, background .2s, border-color .2s, color .2s; }
+.sens-opts button:active { transform:scale(.97); }
+.sens-opts button em { margin-left:auto; font-style:normal; font-size:10px; font-weight:800;
+  color:#93c5fd; background:rgba(59,130,246,.15); border:1px solid rgba(59,130,246,.3);
+  padding:2px 8px; border-radius:999px; }
+.sens-opts button.sel { background:linear-gradient(145deg,rgba(59,130,246,.22),rgba(59,130,246,.08));
+  border-color:rgba(59,130,246,.55); color:var(--text);
+  box-shadow:0 8px 22px -10px rgba(59,130,246,.6); }
+.sens-hint { font-size:11px; color:var(--muted); margin-top:12px; line-height:1.5; opacity:.85; }
+.sens-hint strong { color:var(--text); }
 </style>
 </head>
 <body>
@@ -241,9 +250,15 @@ input[type=range] { width:100%; accent-color:var(--blue); height:6px; cursor:poi
   <div class="status st-ok" id="status-pill"><div class="dot"></div><span id="status-txt">Normal Seviye</span></div>
 
   <div class="sens-wrap">
-    <div class="sens-label">Mikrofon Hassasiyeti <span id="calib-val">97</span></div>
-    <input type="range" id="calib-slider" min="80" max="115" value="97" oninput="onCalibChange(this.value)">
-    <div class="sens-ticks"><span>Daha az duyarlı</span><span>Daha duyarlı</span></div>
+    <div class="sens-title">Mikrofon Hassasiyeti</div>
+    <div class="sens-opts" id="sens-opts">
+      <button type="button" data-c="105" onclick="setSens(105,this)">🔊 Çok Duyarlı</button>
+      <button type="button" data-c="100" onclick="setSens(100,this)">🔉 Duyarlı</button>
+      <button type="button" data-c="97"  onclick="setSens(97,this)">⚖️ Orta <em>Önerilen</em></button>
+      <button type="button" data-c="92"  onclick="setSens(92,this)">🔈 Az Duyarlı</button>
+      <button type="button" data-c="87"  onclick="setSens(87,this)">🔇 Duyarsız</button>
+    </div>
+    <div class="sens-hint">Bağırınca ötüyor ama normal seste ötmüyorsa <strong>Orta</strong> idealdir.</div>
   </div>
 
   <button class="btn btn-red" onclick="lessonEnd()">🏁 Dersi Bitir</button>
@@ -417,19 +432,24 @@ window.addEventListener('pagehide', () => { if (!ended) fbPut('teacher', false);
 
 if (sessionId) showScreen('s-mic');
 
-function onCalibChange(val) {
+function setSens(val, btn) {
   CALIB = parseInt(val);
-  $('calib-val').textContent = val;
   localStorage.setItem('ozbel_calib', val);
+  document.querySelectorAll('#sens-opts button').forEach(b => b.classList.remove('sel'));
+  if (btn) btn.classList.add('sel');
+  else {
+    const m = document.querySelector(`#sens-opts button[data-c="${val}"]`);
+    if (m) m.classList.add('sel');
+  }
 }
 
-// Kaydırıcıyı localStorage'dan başlat
+// Kayıtlı hassasiyeti işaretle (yoksa Orta)
 (function() {
-  const saved = localStorage.getItem('ozbel_calib');
-  if (saved) {
-    const s = $('calib-slider');
-    if (s) { s.value = saved; $('calib-val').textContent = saved; }
-  }
+  const saved = parseInt(localStorage.getItem('ozbel_calib') || '97');
+  CALIB = saved;
+  let m = document.querySelector(`#sens-opts button[data-c="${saved}"]`);
+  if (!m) m = document.querySelector('#sens-opts button[data-c="97"]');
+  if (m) m.classList.add('sel');
 })();
 </script>
 </body>
