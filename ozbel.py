@@ -18,7 +18,7 @@ FIREBASE_DB = "https://ozbel-eb6af-default-rtdb.europe-west1.firebasedatabase.ap
 NETLIFY_URL = "https://glistening-fudge-bca794.netlify.app"
 # ==============================================
 
-APP_VERSION = "1.2.0"
+APP_VERSION = "1.2.1"
 UPDATE_JSON = "https://raw.githubusercontent.com/ozguroyunuzmn/ozbel/main/version.json"
 
 SESSION   = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
@@ -246,10 +246,6 @@ class OzBelApp:
         self.relay = FirebaseRelay(self)
         self.relay.start()
 
-        # Sinif adi yoksa ilk acilista sor
-        if not self.cfg.get("class_name"):
-            GLib.idle_add(self._first_run_class_dialog)
-
     # ── Köşe elemanları ──
     def build_corner_qr(self):
         box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
@@ -388,11 +384,47 @@ class OzBelApp:
         return False
 
     # ── Sinif adi ──
-    def _first_run_class_dialog(self):
-        self.show_class_dialog()
+    def show_class_dialog(self, *_):
+        # Once sifre sor
+        if not self._ask_password():
+            return
+        self._open_class_dialog()
+
+    def _ask_password(self):
+        dlg = Gtk.Dialog(title="Sifre Gerekli", transient_for=self.win, modal=True)
+        dlg.set_default_size(360, 150)
+        content = dlg.get_content_area()
+        content.set_spacing(12)
+        content.set_margin_top(20); content.set_margin_bottom(16)
+        content.set_margin_start(24); content.set_margin_end(24)
+        lbl = Gtk.Label(label="Sinif degistirmek icin sifreyi girin:")
+        lbl.set_halign(Gtk.Align.START)
+        content.pack_start(lbl, False, False, 0)
+        entry = Gtk.Entry()
+        entry.set_visibility(False)
+        entry.set_placeholder_text("Sifre")
+        content.pack_start(entry, False, False, 0)
+        dlg.add_button("Iptal", Gtk.ResponseType.CANCEL)
+        ok_btn = dlg.add_button("Onayla", Gtk.ResponseType.OK)
+        ok_btn.get_style_context().add_class("blue")
+        dlg.set_default_response(Gtk.ResponseType.OK)
+        entry.connect("activate", lambda *_: dlg.response(Gtk.ResponseType.OK))
+        dlg.show_all()
+        resp = dlg.run()
+        pw = entry.get_text()
+        dlg.destroy()
+        if resp != Gtk.ResponseType.OK:
+            return False
+        if pw == "etap+pardus+ozbel!":
+            return True
+        err = Gtk.MessageDialog(transient_for=self.win,
+            message_type=Gtk.MessageType.ERROR, buttons=Gtk.ButtonsType.OK,
+            text="Hatali Sifre")
+        err.format_secondary_text("Sinif degistirilemedi.")
+        err.run(); err.destroy()
         return False
 
-    def show_class_dialog(self, *_):
+    def _open_class_dialog(self, *_):
         dlg = Gtk.Dialog(title="Sinif Adi", transient_for=self.win, modal=True)
         dlg.set_default_size(360, 160)
         content = dlg.get_content_area()

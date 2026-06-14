@@ -1,7 +1,9 @@
 {
-  "version": "1.2.0",
+  "version": "1.2.1",
   "url": "https://raw.githubusercontent.com/ozguroyunuzmn/ozbel/main/ozbel.py",
   "changelog": [
+    "Sinif degistir butonuna sifre korumasi eklendi",
+    "Ilk acilista otomatik sinif sorma kaldirildi",
     "Sinif adi kurulumda sorulur, ayarlanabilir hale getirildi",
     "Uyari sesli bildirim eklendi (90 dB asiminda tahta ses cikarir)",
     "Bagli kalis suresi ready ekraninda goster",
