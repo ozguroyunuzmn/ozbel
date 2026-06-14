@@ -133,6 +133,42 @@ p strong { color:var(--text); }
 body.flash-warn { animation:flashRed .5s ease; }
 #sil { position:fixed; width:1px; height:1px; opacity:.01; pointer-events:none; }
 
+/* Animasyonlu arka plan orb'lar */
+.orbs { position:fixed; inset:0; overflow:hidden; pointer-events:none; z-index:-1; }
+.orb { position:absolute; border-radius:50%; filter:blur(60px); opacity:.5; }
+.orb1 { width:340px; height:340px; top:-120px; left:-100px;
+  background:radial-gradient(circle,#3b82f6,transparent 70%); animation:float1 16s ease-in-out infinite; }
+.orb2 { width:300px; height:300px; bottom:-120px; right:-90px;
+  background:radial-gradient(circle,#22c55e,transparent 70%); animation:float2 19s ease-in-out infinite; }
+.orb3 { width:240px; height:240px; top:40%; right:-120px;
+  background:radial-gradient(circle,#8b5cf6,transparent 70%); animation:float3 22s ease-in-out infinite; }
+@keyframes float1 { 0%,100%{transform:translate(0,0)} 50%{transform:translate(60px,80px)} }
+@keyframes float2 { 0%,100%{transform:translate(0,0)} 50%{transform:translate(-70px,-50px)} }
+@keyframes float3 { 0%,100%{transform:translate(0,0)} 50%{transform:translate(-50px,60px)} }
+
+/* Akıllı cihaz öneri kutusu */
+.smart { width:100%; border-radius:16px; padding:14px 16px;
+  background:linear-gradient(145deg,rgba(139,92,246,.16),rgba(59,130,246,.08));
+  border:1px solid rgba(139,92,246,.3); backdrop-filter:blur(10px);
+  display:flex; align-items:center; gap:13px; }
+.smart-ico { font-size:26px; flex-shrink:0; }
+.smart-body { flex:1; min-width:0; }
+.smart-t { font-size:13px; font-weight:800; color:var(--text); }
+.smart-s { font-size:11px; color:var(--muted); line-height:1.4; margin-top:2px; }
+.smart-s b { color:#c4b5fd; }
+.smart-btn { flex-shrink:0; padding:9px 16px; border-radius:11px; border:none;
+  font-family:inherit; font-size:12px; font-weight:800; cursor:pointer; color:#fff;
+  background:linear-gradient(145deg,#a78bfa,#7c3aed);
+  box-shadow:0 8px 20px -8px rgba(124,58,237,.7); transition:transform .12s; }
+.smart-btn:active { transform:scale(.94); }
+.smart.done { background:linear-gradient(145deg,rgba(34,197,94,.16),rgba(34,197,94,.06));
+  border-color:rgba(34,197,94,.35); }
+
+/* dB sayısı yumuşak büyüme */
+.ring-num { transition:color .35s; }
+@keyframes ringPulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.04)} }
+.ring-wrap.warn { animation:ringPulse .7s ease-in-out infinite; }
+
 /* Mikrofon ekranı */
 .mic-features { display:flex; flex-direction:column; gap:9px; width:100%; }
 .mic-feat { display:flex; align-items:center; gap:13px; padding:12px 15px;
@@ -164,6 +200,8 @@ body.flash-warn { animation:flashRed .5s ease; }
 </style>
 </head>
 <body>
+
+<div class="orbs"><div class="orb orb1"></div><div class="orb orb2"></div><div class="orb orb3"></div></div>
 
 <audio id="sil" loop autoplay muted playsinline
   src="data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA="></audio>
@@ -232,7 +270,7 @@ body.flash-warn { animation:flashRed .5s ease; }
 <div id="s-active" class="screen">
   <div style="display:flex;align-items:center;gap:8px;">
     <div class="logo-text" style="font-size:18px">Öz<em>Bel</em></div>
-    <span style="font-size:11px;color:var(--green);font-weight:600;background:#0d1f0d;border:1px solid #1a3a1a;padding:3px 10px;border-radius:999px">● Aktif</span>
+    <span style="font-size:11px;color:#4ade80;font-weight:700;background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.3);padding:4px 12px;border-radius:999px">● Aktif</span>
   </div>
 
   <div class="ring-wrap">
@@ -248,6 +286,15 @@ body.flash-warn { animation:flashRed .5s ease; }
   </div>
 
   <div class="status st-ok" id="status-pill"><div class="dot"></div><span id="status-txt">Normal Seviye</span></div>
+
+  <div class="smart" id="smart-box">
+    <div class="smart-ico">📱</div>
+    <div class="smart-body">
+      <div class="smart-t" id="smart-t">Cihaz algılanıyor…</div>
+      <div class="smart-s" id="smart-s">Telefonunuza uygun hassasiyeti ayarlayalım</div>
+    </div>
+    <button class="smart-btn" id="smart-btn" onclick="applySmart()">Ayarla</button>
+  </div>
 
   <div class="sens-wrap">
     <div class="sens-title">Mikrofon Hassasiyeti</div>
@@ -400,12 +447,19 @@ function updateRing(db) {
   $('ring-num').textContent = db;
   $('ring-arc').style.strokeDashoffset = CIRC * (1 - Math.min(1, db/120));
   const arc=$('ring-arc'), pill=$('status-pill'), txt=$('status-txt');
+  const num=$('ring-num'), wrap=document.querySelector('.ring-wrap');
   if (db >= 90) {
-    arc.style.stroke='#e53935'; pill.className='status st-warn'; txt.textContent='⚠️ Çok Gürültülü!';
+    arc.style.stroke='#ef4444'; num.style.color='#f87171';
+    pill.className='status st-warn'; txt.textContent='⚠️ Çok Gürültülü!';
+    wrap.classList.add('warn');
   } else if (db >= 70) {
-    arc.style.stroke='#ff8f00'; pill.className='status st-mid'; txt.textContent='Dikkat — Yüksek Ses';
+    arc.style.stroke='#f59e0b'; num.style.color='#fbbf24';
+    pill.className='status st-mid'; txt.textContent='Dikkat — Yüksek Ses';
+    wrap.classList.remove('warn');
   } else {
-    arc.style.stroke='#1db954'; pill.className='status st-ok'; txt.textContent='Normal Seviye';
+    arc.style.stroke='#22c55e'; num.style.color='#4ade80';
+    pill.className='status st-ok'; txt.textContent='Normal Seviye';
+    wrap.classList.remove('warn');
   }
 }
 
@@ -451,6 +505,56 @@ function setSens(val, btn) {
   if (!m) m = document.querySelector('#sens-opts button[data-c="97"]');
   if (m) m.classList.add('sel');
 })();
+
+// ── Akıllı cihaz tespiti ──
+let smartCalib = 97;
+
+async function detectDevice() {
+  let name = "Telefonunuz", calib = 97;
+  const ua = navigator.userAgent;
+
+  // Modern API — Android'de gerçek model verir
+  try {
+    if (navigator.userAgentData && navigator.userAgentData.getHighEntropyValues) {
+      const d = await navigator.userAgentData.getHighEntropyValues(['model','platform']);
+      if (d.model) name = d.model;
+      else if (d.platform) name = d.platform;
+    }
+  } catch (_) {}
+
+  if (name === "Telefonunuz" || !name) {
+    if (/iPhone/.test(ua)) name = "iPhone";
+    else if (/iPad/.test(ua)) name = "iPad";
+    else if (/Android/.test(ua)) {
+      const m = ua.match(/;\s?([^;)]+)\sBuild/) || ua.match(/Android[^;]*;\s?([^;)]+)\)/);
+      name = (m && m[1]) ? m[1].trim() : "Android telefon";
+    } else if (/Windows/.test(ua)) name = "Windows cihaz";
+    else if (/Mac/.test(ua)) name = "Mac";
+  }
+
+  // Cihaz tipine göre makul hassasiyet (buton setiyle uyumlu değerler)
+  if (/iPhone|iPod/.test(ua)) calib = 97;             // iOS mikrofonları dengeli
+  else if (/iPad|Tablet|SM-T|\bTab\b/.test(ua)) calib = 100;
+  else if (/Android/.test(ua)) calib = 100;           // Android genelde biraz kısık
+  else calib = 97;
+
+  smartCalib = calib;
+  const lvl = { 105:"Çok Duyarlı", 100:"Duyarlı", 97:"Orta", 92:"Az Duyarlı", 87:"Duyarsız" }[calib] || "Orta";
+  $('smart-t').textContent = name + " algılandı";
+  $('smart-s').innerHTML = "Önerilen hassasiyet: <b>" + lvl + "</b>";
+}
+
+function applySmart() {
+  setSens(smartCalib);
+  const box = $('smart-box');
+  box.classList.add('done');
+  $('smart-ico').textContent = "✅";
+  $('smart-t').textContent = "Ayarlandı";
+  $('smart-s').innerHTML = "Cihazınıza göre hassasiyet seçildi";
+  $('smart-btn').style.display = "none";
+}
+
+detectDevice();
 </script>
 </body>
 </html>
