@@ -18,13 +18,14 @@ FIREBASE_DB = "https://ozbel-eb6af-default-rtdb.europe-west1.firebasedatabase.ap
 NETLIFY_URL = "https://glistening-fudge-bca794.netlify.app"
 # ==============================================
 
-APP_VERSION = "1.4.1"
+APP_VERSION = "1.5.0"
 UPDATE_JSON = "https://raw.githubusercontent.com/ozguroyunuzmn/ozbel/main/version.json"
 
 SESSION   = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
 APP_DIR   = os.path.dirname(os.path.abspath(__file__))
 THRESHOLD = 90
-CLASS_PASSWORD = "etap+pardus+ozbel!"
+DEFAULT_PASSWORD = "etap+pardus!"
+AUTOSTART_FILE = os.path.join(os.path.expanduser("~"), ".config", "autostart", "ozbel.desktop")
 
 # Gurultu tespiti: ogretmen konusmasi (dalgali, duraklı) elenir, sinif gurultusu (surekli) yakalanir.
 SUSTAIN_SEC   = 2.5   # 90 dB'i bu kadar sn SUREKLI asarsa gurultu say
@@ -268,6 +269,9 @@ CSS = (
 class OzBelApp:
     def __init__(self):
         self.cfg = load_config()
+        # Ayarlar yalnizca bu tahtaya ozeldir (yerel config.json)
+        self.password  = self.cfg.get("password") or DEFAULT_PASSWORD
+        self.threshold = int(self.cfg.get("threshold") or THRESHOLD)
 
         provider = Gtk.CssProvider()
         try:
@@ -498,11 +502,11 @@ class OzBelApp:
         Gtk.main_quit()
         return False
 
-    # ── Sınıf adı ──
+    # ── Ayarlar ──
     def show_class_dialog(self, *_):
         if not self._ask_password():
             return
-        self._open_class_dialog()
+        self._open_settings()
 
     def _ask_password(self):
         dlg = Gtk.Dialog(title="Şifre Gerekli", transient_for=self.win, modal=True)
@@ -511,7 +515,7 @@ class OzBelApp:
         content.set_spacing(12)
         content.set_margin_top(20); content.set_margin_bottom(16)
         content.set_margin_start(24); content.set_margin_end(24)
-        lbl = Gtk.Label(label="Sınıf değiştirmek için şifreyi girin:")
+        lbl = Gtk.Label(label="Ayarları açmak için şifreyi girin:")
         lbl.set_halign(Gtk.Align.START)
         content.pack_start(lbl, False, False, 0)
         entry = Gtk.Entry()
@@ -529,44 +533,177 @@ class OzBelApp:
         dlg.destroy()
         if resp != Gtk.ResponseType.OK:
             return False
-        if pw == CLASS_PASSWORD:
+        if pw == self.password:
             return True
         err = Gtk.MessageDialog(transient_for=self.win,
             message_type=Gtk.MessageType.ERROR, buttons=Gtk.ButtonsType.OK,
             text="Hatalı Şifre")
-        err.format_secondary_text("Sınıf değiştirilemedi.")
+        err.format_secondary_text("Ayarlar açılamadı.")
         err.run(); err.destroy()
         return False
 
-    def _open_class_dialog(self, *_):
-        dlg = Gtk.Dialog(title="Sınıf Adı", transient_for=self.win, modal=True)
-        dlg.set_default_size(360, 160)
-        content = dlg.get_content_area()
-        content.set_spacing(12)
-        content.set_margin_top(20); content.set_margin_bottom(16)
-        content.set_margin_start(24); content.set_margin_end(24)
-        lbl = Gtk.Label(label="Bu tahtanın bulunduğu sınıf adını girin:")
+    def _settings_row(self, label_text):
+        row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
+        lbl = Gtk.Label(label=label_text)
         lbl.set_halign(Gtk.Align.START)
-        content.pack_start(lbl, False, False, 0)
-        entry = Gtk.Entry()
-        entry.set_placeholder_text("Örnek: 7-F")
-        current = self.cfg.get("class_name", "")
-        if current:
-            entry.set_text(current)
-        content.pack_start(entry, False, False, 0)
+        lbl.set_xalign(0)
+        lbl.set_size_request(150, -1)
+        row.pack_start(lbl, False, False, 0)
+        return row
+
+    def _open_settings(self, *_):
+        dlg = Gtk.Dialog(title="ÖzBel — Ayarlar", transient_for=self.win, modal=True)
+        dlg.set_default_size(440, 420)
+        content = dlg.get_content_area()
+        content.set_spacing(14)
+        content.set_margin_top(20); content.set_margin_bottom(16)
+        content.set_margin_start(26); content.set_margin_end(26)
+
+        title = Gtk.Label()
+        title.set_markup('<b>Bu Tahtanın Ayarları</b>')
+        title.set_halign(Gtk.Align.START)
+        content.pack_start(title, False, False, 0)
+        info = Gtk.Label(label="Ayarlar yalnızca bu tahtaya kaydedilir.")
+        info.set_halign(Gtk.Align.START)
+        info.get_style_context().add_class("subtitle")
+        content.pack_start(info, False, False, 0)
+
+        # Sınıf adı
+        r1 = self._settings_row("Sınıf adı")
+        e_class = Gtk.Entry()
+        e_class.set_placeholder_text("Örnek: 7-F")
+        e_class.set_text(self.cfg.get("class_name", ""))
+        e_class.set_hexpand(True)
+        r1.pack_start(e_class, True, True, 0)
+        content.pack_start(r1, False, False, 0)
+
+        # Uyarı eşiği (dB)
+        r2 = self._settings_row("Kaç dB'de ötsün")
+        adj = Gtk.Adjustment(value=self.threshold, lower=60, upper=120, step_increment=1, page_increment=5)
+        sp_db = Gtk.SpinButton(adjustment=adj, climb_rate=1, digits=0)
+        sp_db.set_value(self.threshold)
+        r2.pack_start(sp_db, False, False, 0)
+        content.pack_start(r2, False, False, 0)
+
+        # Başlangıçta otomatik aç
+        r3 = self._settings_row("Sistemle başlat")
+        sw_auto = Gtk.Switch()
+        sw_auto.set_active(self._autostart_enabled())
+        sw_auto.set_halign(Gtk.Align.START)
+        r3.pack_start(sw_auto, False, False, 0)
+        content.pack_start(r3, False, False, 0)
+
+        # Şifre değiştir
+        r4 = self._settings_row("Yeni şifre")
+        e_pw = Gtk.Entry()
+        e_pw.set_visibility(False)
+        e_pw.set_placeholder_text("Boş bırakırsan değişmez")
+        e_pw.set_hexpand(True)
+        r4.pack_start(e_pw, True, True, 0)
+        content.pack_start(r4, False, False, 0)
+
+        content.pack_start(Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL), False, False, 6)
+
+        # Tamamen sil
+        del_btn = Gtk.Button(label="🗑  Uygulamayı Tamamen Sil")
+        del_btn.get_style_context().add_class("red")
+        del_btn.connect("clicked", lambda *_: self._confirm_uninstall(dlg))
+        content.pack_start(del_btn, False, False, 0)
+
         dlg.add_button("İptal", Gtk.ResponseType.CANCEL)
         ok_btn = dlg.add_button("Kaydet", Gtk.ResponseType.OK)
         ok_btn.get_style_context().add_class("blue")
         dlg.set_default_response(Gtk.ResponseType.OK)
-        entry.connect("activate", lambda *_: dlg.response(Gtk.ResponseType.OK))
+
         dlg.show_all()
         resp = dlg.run()
-        name = entry.get_text().strip()
-        dlg.destroy()
-        if resp == Gtk.ResponseType.OK and name:
+        if resp == Gtk.ResponseType.OK:
+            name = e_class.get_text().strip()
             self.cfg["class_name"] = name
+            self.threshold = int(sp_db.get_value())
+            self.cfg["threshold"] = self.threshold
+            new_pw = e_pw.get_text().strip()
+            if new_pw:
+                self.password = new_pw
+                self.cfg["password"] = new_pw
+            self._set_autostart(sw_auto.get_active())
+            self.cfg["autostart"] = sw_auto.get_active()
             save_config(self.cfg)
             self._update_class_label()
+        dlg.destroy()
+
+    # ── Otomatik başlatma (kullanıcıya özel) ──
+    def _autostart_enabled(self):
+        if os.path.exists(AUTOSTART_FILE):
+            try:
+                with open(AUTOSTART_FILE, encoding="utf-8") as f:
+                    return "Hidden=true" not in f.read()
+            except Exception:
+                return True
+        # Dosya yoksa sistem autostart'i (varsa) gecerli kabul et
+        return self.cfg.get("autostart", True)
+
+    def _set_autostart(self, enabled):
+        try:
+            os.makedirs(os.path.dirname(AUTOSTART_FILE), exist_ok=True)
+            if enabled:
+                with open(AUTOSTART_FILE, "w", encoding="utf-8") as f:
+                    f.write(
+                        "[Desktop Entry]\nType=Application\nName=ÖzBel\n"
+                        "Exec=ozbel\nIcon=audio-volume-high\nTerminal=false\n"
+                        "X-GNOME-Autostart-enabled=true\nX-GNOME-Autostart-Delay=5\n")
+            else:
+                # Sistem genelindeki autostart'i da bastirmak icin Hidden=true
+                with open(AUTOSTART_FILE, "w", encoding="utf-8") as f:
+                    f.write(
+                        "[Desktop Entry]\nType=Application\nName=ÖzBel\n"
+                        "Exec=ozbel\nHidden=true\nX-GNOME-Autostart-enabled=false\n")
+        except Exception:
+            pass
+
+    # ── Tamamen sil ──
+    def _confirm_uninstall(self, parent):
+        dlg = Gtk.MessageDialog(transient_for=parent,
+            message_type=Gtk.MessageType.WARNING, buttons=Gtk.ButtonsType.YES_NO,
+            text="Uygulamayı Tamamen Sil")
+        dlg.format_secondary_text(
+            "ÖzBel bu tahtadan kaldırılacak: ayarlar, kayıtlar ve "
+            "otomatik başlatma silinecek, uygulama kapanacak.\n\nEmin misiniz?")
+        resp = dlg.run(); dlg.destroy()
+        if resp != Gtk.ResponseType.YES:
+            return
+        self._do_uninstall()
+
+    def _do_uninstall(self):
+        # Kullanici verilerini ve autostart'i temizle
+        try: shutil.rmtree(USER_DIR, ignore_errors=True)
+        except Exception: pass
+        try:
+            if os.path.exists(AUTOSTART_FILE):
+                os.remove(AUTOSTART_FILE)
+        except Exception: pass
+        # Sistem paketini kaldirmayi dene (yetki gerekebilir)
+        removed = False
+        for cmd in (["pkexec", "apt-get", "remove", "-y", "ozbel"],
+                    ["pkexec", "dpkg", "-r", "ozbel"]):
+            try:
+                if subprocess.call(cmd) == 0:
+                    removed = True
+                    break
+            except Exception:
+                continue
+        msg = Gtk.MessageDialog(transient_for=self.win,
+            message_type=Gtk.MessageType.INFO, buttons=Gtk.ButtonsType.OK,
+            text="ÖzBel Kaldırıldı")
+        if removed:
+            msg.format_secondary_text("Uygulama tamamen kaldırıldı. Pencere kapanacak.")
+        else:
+            msg.format_secondary_text(
+                "Ayarlar ve veriler silindi, uygulama kapanıyor.\n"
+                "Sistemden tamamen kaldırmak için yönetici hesabında:\n"
+                "sudo apt remove ozbel")
+        msg.run(); msg.destroy()
+        self.quit()
 
     def _update_class_label(self):
         name = self.cfg.get("class_name", "")
@@ -787,7 +924,7 @@ class OzBelApp:
         self.class_lbl = Gtk.Label(label="")
         self.class_lbl.get_style_context().add_class("class-badge")
         badge_row.pack_start(self.class_lbl, False, False, 0)
-        change_btn = Gtk.Button(label="Sınıf Değiştir")
+        change_btn = Gtk.Button(label="⚙ Ayarlar")
         change_btn.get_style_context().add_class("small-outline")
         change_btn.connect("clicked", self.show_class_dialog)
         badge_row.pack_start(change_btn, False, False, 0)
@@ -942,7 +1079,7 @@ class OzBelApp:
         self.dbwin_val.set_text(f"{db}  dB")
 
         now = time.time()
-        if db >= THRESHOLD:
+        if db >= self.threshold:
             self.last_loud = now
             if self.loud_start is None:
                 self.loud_start = now
