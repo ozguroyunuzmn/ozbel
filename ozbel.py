@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-OzBel -- Akilli Tahta Kulak Sagligi Sistemi
-Native Pardus uygulamasi (Python + GTK3)
+ÖzBel — Akıllı Tahta Kulak Sağlığı Sistemi
+Native Pardus uygulaması (Python + GTK3)
 """
 
 import gi
@@ -18,12 +18,13 @@ FIREBASE_DB = "https://ozbel-eb6af-default-rtdb.europe-west1.firebasedatabase.ap
 NETLIFY_URL = "https://glistening-fudge-bca794.netlify.app"
 # ==============================================
 
-APP_VERSION = "1.2.1"
+APP_VERSION = "1.2.2"
 UPDATE_JSON = "https://raw.githubusercontent.com/ozguroyunuzmn/ozbel/main/version.json"
 
 SESSION   = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
 APP_DIR   = os.path.dirname(os.path.abspath(__file__))
 THRESHOLD = 90
+CLASS_PASSWORD = "etap+pardus+ozbel!"
 
 USER_DIR    = os.path.join(os.path.expanduser("~"), ".local", "share", "ozbel")
 CONFIG_FILE = os.path.join(USER_DIR, "config.json")
@@ -48,7 +49,7 @@ def log_stats(class_name, alert_count, max_db):
         with open(STATS_FILE, "a", encoding="utf-8") as f:
             dt = datetime.now().strftime("%Y-%m-%d %H:%M")
             cn = class_name if class_name else "?"
-            f.write(f"{dt}  Sinif:{cn}  Uyari:{alert_count}  MaxdB:{max_db}\n")
+            f.write(f"{dt}  Sınıf:{cn}  Uyarı:{alert_count}  MaxdB:{max_db}\n")
     except Exception:
         pass
 
@@ -66,7 +67,7 @@ def play_alert_sound():
 
 
 # ================================================================
-# Firebase Relay -- SSE ile dinler, REST ile yazar
+# Firebase Relay — SSE ile dinler, REST ile yazar
 # ================================================================
 class FirebaseRelay(threading.Thread):
     def __init__(self, app):
@@ -198,11 +199,16 @@ CSS = (
 "                padding:12px 32px; font-weight:700; border:none; font-size:14px; }\n"
 "button.blue   { background:#1a73e8; color:#fff; border-radius:12px;"
 "                padding:10px 24px; font-weight:700; border:none; font-size:13px; }\n"
-".alert-win   { background-color:#0d0000; }\n"
-".alert-title { color:#ff1744; font-size:56px; font-weight:900; }\n"
-".alert-db    { color:#ff5252; font-size:110px; font-weight:900; }\n"
-".alert-unit  { color:#c08080; font-size:28px; font-weight:600; }\n"
-".alert-sub   { color:#a06060; font-size:20px; }\n"
+".alert-win   { background-color:#1a0000; }\n"
+".alert-badge { color:#fff; font-size:22px; font-weight:800;"
+"               background:#e53935; border-radius:999px; padding:10px 36px; }\n"
+".alert-title { color:#ff5252; font-size:72px; font-weight:900; letter-spacing:-1px; }\n"
+".alert-db    { color:#ff1744; font-size:150px; font-weight:900; letter-spacing:-4px; }\n"
+".alert-unit  { color:#ff8a80; font-size:34px; font-weight:700; }\n"
+".alert-sub   { color:#ffab91; font-size:24px; }\n"
+".alert-class { color:#ff8a80; font-size:18px; font-weight:700;"
+"               background:#2a0808; border:1px solid #5a1818;"
+"               border-radius:999px; padding:6px 22px; }\n"
 )
 
 
@@ -214,7 +220,7 @@ class OzBelApp:
         Gtk.StyleContext.add_provider_for_screen(
             Gdk.Screen.get_default(), provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
 
-        self.win = Gtk.Window(title="OzBel")
+        self.win = Gtk.Window(title="ÖzBel")
         self.win.set_default_size(1000, 700)
         self.win.maximize()
         self.win.connect("destroy", self.quit)
@@ -263,12 +269,13 @@ class OzBelApp:
         lbl = Gtk.Label()
         lbl.set_markup(
             '<span foreground="#8b949e" font_size="9000">'
-            'Telefonunuzdan kamera uygulamasini\nacip bu kucuk karekodu okutunuz'
+            'Telefonunuzdan kamera uygulamasını\naçıp bu küçük karekodu okutunuz'
             '</span>'
         )
         lbl.set_justify(Gtk.Justification.CENTER)
         box.pack_start(lbl, False, False, 0)
 
+        self.corner_box = box
         self.overlay.add_overlay(box)
         self.overlay.set_overlay_pass_through(box, True)
 
@@ -279,18 +286,27 @@ class OzBelApp:
         btn_col.set_margin_start(18)
         btn_col.set_margin_bottom(18)
 
-        upd_btn = Gtk.Button(label="Guncelleme Denetle")
+        upd_btn = Gtk.Button(label="Güncelleme Denetle")
         upd_btn.get_style_context().add_class("outline")
         upd_btn.connect("clicked", self.check_update)
         btn_col.pack_start(upd_btn, False, False, 0)
 
-        stats_btn = Gtk.Button(label="Istatistikleri Goster")
+        stats_btn = Gtk.Button(label="İstatistikleri Göster")
         stats_btn.get_style_context().add_class("outline")
         stats_btn.connect("clicked", self.show_stats_log)
         btn_col.pack_start(stats_btn, False, False, 0)
 
+        self.corner_btns = btn_col
         self.overlay.add_overlay(btn_col)
         self.overlay.set_overlay_pass_through(btn_col, False)
+
+    def _hide_corners(self):
+        self.corner_box.hide()
+        self.corner_btns.hide()
+
+    def _show_corners(self):
+        self.corner_box.show()
+        self.corner_btns.show()
 
     # ── Güncelleme ──
     def check_update(self, *_):
@@ -298,7 +314,10 @@ class OzBelApp:
 
     def _do_check_update(self):
         try:
-            resp = urllib.request.urlopen(UPDATE_JSON, timeout=10).read()
+            # Önbelleği atlamak için zaman damgası ekle
+            url = UPDATE_JSON + "?t=" + str(int(time.time()))
+            req = urllib.request.Request(url, headers={"Cache-Control": "no-cache"})
+            resp = urllib.request.urlopen(req, timeout=10).read()
             info = json.loads(resp)
             latest    = info.get("version", "")
             py_url    = info.get("url", "")
@@ -308,7 +327,7 @@ class OzBelApp:
             return
 
         if not latest or not py_url:
-            GLib.idle_add(self._update_dialog, "error", "Sunucu yaniti gecersiz.")
+            GLib.idle_add(self._update_dialog, "error", "Sunucu yanıtı geçersiz.")
             return
 
         if latest == APP_VERSION:
@@ -321,28 +340,28 @@ class OzBelApp:
         if state == "error":
             dlg = Gtk.MessageDialog(transient_for=self.win,
                 message_type=Gtk.MessageType.ERROR, buttons=Gtk.ButtonsType.OK,
-                text="Guncelleme Kontrolu Basarisiz")
+                text="Güncelleme Kontrolü Başarısız")
             dlg.format_secondary_text(args[0])
             dlg.run(); dlg.destroy()
 
         elif state == "latest":
             dlg = Gtk.MessageDialog(transient_for=self.win,
                 message_type=Gtk.MessageType.INFO, buttons=Gtk.ButtonsType.OK,
-                text="Guncel")
-            dlg.format_secondary_text(f"OzBel {APP_VERSION} zaten en guncel surum.")
+                text="Güncel")
+            dlg.format_secondary_text(f"ÖzBel {APP_VERSION} zaten en güncel sürüm.")
             dlg.run(); dlg.destroy()
 
         elif state == "available":
             latest, py_url, changelog = args
-            log_text = "\n".join(f"* {c}" for c in changelog) if changelog else "-"
+            log_text = "\n".join(f"• {c}" for c in changelog) if changelog else "—"
             dlg = Gtk.MessageDialog(transient_for=self.win,
                 message_type=Gtk.MessageType.QUESTION,
                 buttons=Gtk.ButtonsType.YES_NO,
-                text=f"Guncelleme Mevcut - v{latest}")
+                text=f"Güncelleme Mevcut — v{latest}")
             dlg.format_secondary_text(
-                f"Mevcut surum: {APP_VERSION}  ->  Yeni surum: {latest}\n\n"
-                f"Degisiklikler:\n{log_text}\n\n"
-                "Guncelleme indirilip uygulama yeniden baslatilacak. Devam edilsin mi?")
+                f"Mevcut sürüm: {APP_VERSION}  →  Yeni sürüm: {latest}\n\n"
+                f"Değişiklikler:\n{log_text}\n\n"
+                "Güncelleme indirilip uygulama yeniden başlatılacak. Devam edilsin mi?")
             resp = dlg.run(); dlg.destroy()
             if resp == Gtk.ResponseType.YES:
                 threading.Thread(target=self._do_install_update,
@@ -353,19 +372,24 @@ class OzBelApp:
         try:
             os.makedirs(USER_DIR, exist_ok=True)
             dest = os.path.join(USER_DIR, "ozbel.py")
-            urllib.request.urlretrieve(py_url, dest)
+            url = py_url + "?t=" + str(int(time.time()))
+            req = urllib.request.Request(url, headers={"Cache-Control": "no-cache"})
+            with urllib.request.urlopen(req, timeout=30) as r:
+                content = r.read()
+            with open(dest, "wb") as f:
+                f.write(content)
             os.chmod(dest, 0o755)
             self._update_dest = dest
         except Exception as e:
-            GLib.idle_add(self._update_dialog, "error", f"Indirme hatasi: {e}")
+            GLib.idle_add(self._update_dialog, "error", f"İndirme hatası: {e}")
             return
         GLib.idle_add(self._restart_app)
 
     def _show_updating(self):
         dlg = Gtk.MessageDialog(transient_for=self.win,
             message_type=Gtk.MessageType.INFO, buttons=Gtk.ButtonsType.NONE,
-            text="Guncelleme Indiriliyor...")
-        dlg.format_secondary_text("Lutfen bekleyin.")
+            text="Güncelleme İndiriliyor…")
+        dlg.format_secondary_text("Lütfen bekleyin.")
         dlg.show_all()
         self._updating_dlg = dlg
 
@@ -383,28 +407,27 @@ class OzBelApp:
         Gtk.main_quit()
         return False
 
-    # ── Sinif adi ──
+    # ── Sınıf adı ──
     def show_class_dialog(self, *_):
-        # Once sifre sor
         if not self._ask_password():
             return
         self._open_class_dialog()
 
     def _ask_password(self):
-        dlg = Gtk.Dialog(title="Sifre Gerekli", transient_for=self.win, modal=True)
+        dlg = Gtk.Dialog(title="Şifre Gerekli", transient_for=self.win, modal=True)
         dlg.set_default_size(360, 150)
         content = dlg.get_content_area()
         content.set_spacing(12)
         content.set_margin_top(20); content.set_margin_bottom(16)
         content.set_margin_start(24); content.set_margin_end(24)
-        lbl = Gtk.Label(label="Sinif degistirmek icin sifreyi girin:")
+        lbl = Gtk.Label(label="Sınıf değiştirmek için şifreyi girin:")
         lbl.set_halign(Gtk.Align.START)
         content.pack_start(lbl, False, False, 0)
         entry = Gtk.Entry()
         entry.set_visibility(False)
-        entry.set_placeholder_text("Sifre")
+        entry.set_placeholder_text("Şifre")
         content.pack_start(entry, False, False, 0)
-        dlg.add_button("Iptal", Gtk.ResponseType.CANCEL)
+        dlg.add_button("İptal", Gtk.ResponseType.CANCEL)
         ok_btn = dlg.add_button("Onayla", Gtk.ResponseType.OK)
         ok_btn.get_style_context().add_class("blue")
         dlg.set_default_response(Gtk.ResponseType.OK)
@@ -415,32 +438,32 @@ class OzBelApp:
         dlg.destroy()
         if resp != Gtk.ResponseType.OK:
             return False
-        if pw == "etap+pardus+ozbel!":
+        if pw == CLASS_PASSWORD:
             return True
         err = Gtk.MessageDialog(transient_for=self.win,
             message_type=Gtk.MessageType.ERROR, buttons=Gtk.ButtonsType.OK,
-            text="Hatali Sifre")
-        err.format_secondary_text("Sinif degistirilemedi.")
+            text="Hatalı Şifre")
+        err.format_secondary_text("Sınıf değiştirilemedi.")
         err.run(); err.destroy()
         return False
 
     def _open_class_dialog(self, *_):
-        dlg = Gtk.Dialog(title="Sinif Adi", transient_for=self.win, modal=True)
+        dlg = Gtk.Dialog(title="Sınıf Adı", transient_for=self.win, modal=True)
         dlg.set_default_size(360, 160)
         content = dlg.get_content_area()
         content.set_spacing(12)
         content.set_margin_top(20); content.set_margin_bottom(16)
         content.set_margin_start(24); content.set_margin_end(24)
-        lbl = Gtk.Label(label="Bu tahtanin bulundugu sinif adini girin:")
+        lbl = Gtk.Label(label="Bu tahtanın bulunduğu sınıf adını girin:")
         lbl.set_halign(Gtk.Align.START)
         content.pack_start(lbl, False, False, 0)
         entry = Gtk.Entry()
-        entry.set_placeholder_text("Ornek: 7-F")
+        entry.set_placeholder_text("Örnek: 7-F")
         current = self.cfg.get("class_name", "")
         if current:
             entry.set_text(current)
         content.pack_start(entry, False, False, 0)
-        dlg.add_button("Iptal", Gtk.ResponseType.CANCEL)
+        dlg.add_button("İptal", Gtk.ResponseType.CANCEL)
         ok_btn = dlg.add_button("Kaydet", Gtk.ResponseType.OK)
         ok_btn.get_style_context().add_class("blue")
         dlg.set_default_response(Gtk.ResponseType.OK)
@@ -457,24 +480,24 @@ class OzBelApp:
     def _update_class_label(self):
         name = self.cfg.get("class_name", "")
         if name:
-            self.class_lbl.set_text(f"{name}  —  Test Asamasinda Calisiyor")
+            self.class_lbl.set_text(f"{name} — Test Aşamasında Çalışılıyor")
         else:
-            self.class_lbl.set_text("Sinif ayarlanmadi — tikla ayarla")
+            self.class_lbl.set_text("Sınıf ayarlanmadı")
 
-    # ── Istatistik logu ──
+    # ── İstatistik logu ──
     def show_stats_log(self, *_):
         try:
             if not os.path.exists(STATS_FILE):
-                text = "Henuz hic ders istatistigi kaydedilmedi."
+                text = "Henüz hiç ders istatistiği kaydedilmedi."
             else:
                 with open(STATS_FILE, encoding="utf-8") as f:
                     lines = f.readlines()
-                text = "".join(lines[-30:]) if lines else "Log bos."
+                text = "".join(lines[-30:]) if lines else "Kayıt boş."
         except Exception as e:
             text = f"Hata: {e}"
         dlg = Gtk.MessageDialog(transient_for=self.win,
             message_type=Gtk.MessageType.INFO, buttons=Gtk.ButtonsType.OK,
-            text="Ders Istatistikleri (Son 30)")
+            text="Ders İstatistikleri (Son 30)")
         dlg.format_secondary_text(text)
         dlg.run(); dlg.destroy()
 
@@ -482,8 +505,8 @@ class OzBelApp:
     def build_tray(self):
         try:
             self.tray = Gtk.StatusIcon.new_from_icon_name("audio-volume-high")
-            self.tray.set_title("OzBel")
-            self.tray.set_tooltip_text("OzBel -- Kulak Sagligi")
+            self.tray.set_title("ÖzBel")
+            self.tray.set_tooltip_text("ÖzBel — Kulak Sağlığı")
             self.tray.connect("activate", lambda *_: self.show_dbwin())
             self.tray.connect("popup-menu", self.on_tray_menu)
             self.tray.set_visible(False)
@@ -492,19 +515,19 @@ class OzBelApp:
 
     def on_tray_menu(self, icon, button, t):
         m = Gtk.Menu()
-        h = Gtk.MenuItem(label="OzBel -- Yonetim")
+        h = Gtk.MenuItem(label="ÖzBel — Yönetim")
         h.set_sensitive(False); m.append(h)
         m.append(Gtk.SeparatorMenuItem())
-        i1 = Gtk.MenuItem(label="Desibel Ol")
+        i1 = Gtk.MenuItem(label="Desibel Ölç")
         i1.connect("activate", lambda *_: self.show_dbwin()); m.append(i1)
-        i2 = Gtk.MenuItem(label="Baglantiy Kopart")
+        i2 = Gtk.MenuItem(label="Bağlantıyı Kes")
         i2.connect("activate", self.disconnect_teacher); m.append(i2)
         m.show_all()
         m.popup(None, None, Gtk.StatusIcon.position_menu, icon, button, t)
 
-    # ── Kucuk Desibel penceresi ──
+    # ── Küçük Desibel penceresi ──
     def build_dbwin(self):
-        self.dbwin = Gtk.Window(title="OzBel -- Desibel")
+        self.dbwin = Gtk.Window(title="ÖzBel — Desibel")
         self.dbwin.set_default_size(280, 180)
         self.dbwin.set_keep_above(True)
         self.dbwin.set_resizable(False)
@@ -512,12 +535,12 @@ class OzBelApp:
         b = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
         b.set_halign(Gtk.Align.CENTER); b.set_valign(Gtk.Align.CENTER)
         b.set_margin_top(14); b.set_margin_bottom(14)
-        tl = Gtk.Label(); tl.set_markup('<span foreground="#8b949e">Anlik Ses Seviyesi</span>')
+        tl = Gtk.Label(); tl.set_markup('<span foreground="#8b949e">Anlık Ses Seviyesi</span>')
         b.pack_start(tl, False, False, 0)
-        self.dbwin_val = Gtk.Label(label="--  dB")
+        self.dbwin_val = Gtk.Label(label="—  dB")
         self.dbwin_val.get_style_context().add_class("db-live")
         b.pack_start(self.dbwin_val, False, False, 0)
-        btn = Gtk.Button(label="Baglantiy Kopart")
+        btn = Gtk.Button(label="Bağlantıyı Kes")
         btn.get_style_context().add_class("outline")
         btn.connect("clicked", self.disconnect_teacher)
         b.pack_start(btn, False, False, 0)
@@ -531,7 +554,7 @@ class OzBelApp:
         try: self.dbwin.hide()
         except Exception: pass
 
-    # ── Kurulum ekrani ──
+    # ── Kurulum ekranı ──
     def build_setup(self):
         outer = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
         outer.set_halign(Gtk.Align.FILL); outer.set_valign(Gtk.Align.FILL)
@@ -543,13 +566,13 @@ class OzBelApp:
 
         logo_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
         logo_row.set_halign(Gtk.Align.CENTER)
-        l1 = Gtk.Label(label="Oz"); l1.get_style_context().add_class("logo-text")
+        l1 = Gtk.Label(label="Öz"); l1.get_style_context().add_class("logo-text")
         l2 = Gtk.Label(label="Bel"); l2.get_style_context().add_class("logo-blue")
         logo_row.pack_start(l1, False, False, 0)
         logo_row.pack_start(l2, False, False, 0)
         box.pack_start(logo_row, False, False, 0)
 
-        sub = Gtk.Label(label="Akilli Tahta  -  Kulak Sagligi Koruma Sistemi")
+        sub = Gtk.Label(label="Akıllı Tahta  •  Kulak Sağlığı Koruma Sistemi")
         sub.get_style_context().add_class("subtitle")
         sub.set_halign(Gtk.Align.CENTER)
         box.pack_start(sub, False, False, 0)
@@ -561,15 +584,15 @@ class OzBelApp:
         card.get_style_context().add_class("card")
         card.set_margin_top(4)
 
-        ct = Gtk.Label(label="Nasil Baslanir?")
+        ct = Gtk.Label(label="Nasıl Başlanır?")
         ct.get_style_context().add_class("card-title")
         ct.set_halign(Gtk.Align.START)
         card.pack_start(ct, False, False, 0)
 
         steps = [
-            ("1", "Sagdaki QR kodu", "telefon kameranizla okutun"),
-            ("2", "Acilan sayfada", "mikrofon iznini verin"),
-            ("3", "Sistem hazir --", "90 dB'i asinca uyari cikar"),
+            ("1", "Sağdaki QR kodu", "telefon kameranızla okutun"),
+            ("2", "Açılan sayfada", "mikrofon iznini verin"),
+            ("3", "Sistem hazır —", "90 dB'i aşınca uyarı çıkar"),
         ]
         for num, bold, rest in steps:
             row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
@@ -597,7 +620,7 @@ class OzBelApp:
         self.code_lbl.get_style_context().add_class("code")
         self.code_lbl.set_halign(Gtk.Align.CENTER)
         qr_box.pack_start(self.code_lbl, False, False, 0)
-        ql = Gtk.Label(label="Kameranizla okutun")
+        ql = Gtk.Label(label="Kameranızla okutun")
         ql.get_style_context().add_class("qrlabel")
         ql.set_halign(Gtk.Align.CENTER)
         qr_box.pack_start(ql, False, False, 0)
@@ -605,7 +628,7 @@ class OzBelApp:
 
         box.pack_start(hbox, False, False, 0)
 
-        self.pill = Gtk.Label(label="Ogretmen bekleniyor...")
+        self.pill = Gtk.Label(label="Öğretmen bekleniyor…")
         self.pill.get_style_context().add_class("pill")
         self.pill.set_halign(Gtk.Align.CENTER)
         box.pack_start(self.pill, False, False, 0)
@@ -621,13 +644,13 @@ class OzBelApp:
         ver.set_halign(Gtk.Align.CENTER)
         box.pack_start(ver, False, False, 0)
 
-        # Sinif etiketi + degistir butonu
+        # Sınıf etiketi + değiştir butonu
         badge_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
         badge_row.set_halign(Gtk.Align.CENTER)
         self.class_lbl = Gtk.Label(label="")
         self.class_lbl.get_style_context().add_class("class-badge")
         badge_row.pack_start(self.class_lbl, False, False, 0)
-        change_btn = Gtk.Button(label="Sinif Degistir")
+        change_btn = Gtk.Button(label="Sınıf Değiştir")
         change_btn.get_style_context().add_class("small-outline")
         change_btn.connect("clicked", self.show_class_dialog)
         badge_row.pack_start(change_btn, False, False, 0)
@@ -638,27 +661,27 @@ class OzBelApp:
         outer.pack_start(box, True, True, 0)
         self.stack.add_named(outer, "setup")
 
-    # ── Hazir ekrani ──
+    # ── Hazır ekranı ──
     def build_ready(self):
         box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=20)
         box.set_halign(Gtk.Align.CENTER); box.set_valign(Gtk.Align.CENTER)
 
-        ico = Gtk.Label(); ico.set_markup('<span size="80000">mic</span>')
+        ico = Gtk.Label(); ico.set_markup('<span size="80000">🎙️</span>')
         box.pack_start(ico, False, False, 0)
 
-        rl = Gtk.Label(label="Sistem Aktif")
+        rl = Gtk.Label(label="● Sistem Aktif")
         rl.get_style_context().add_class("ready-label")
         rl.set_halign(Gtk.Align.CENTER)
         box.pack_start(rl, False, False, 0)
 
-        rs = Gtk.Label(label="Ogretmenin telefon mikrofonu bagli -- anlik olcum yapiliyor")
+        rs = Gtk.Label(label="Öğretmenin telefon mikrofonu bağlı — anlık ölçüm yapılıyor")
         rs.get_style_context().add_class("ready-sub")
         rs.set_halign(Gtk.Align.CENTER)
         box.pack_start(rs, False, False, 0)
 
         db_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
         db_row.set_halign(Gtk.Align.CENTER)
-        self.db_live = Gtk.Label(label="--")
+        self.db_live = Gtk.Label(label="—")
         self.db_live.get_style_context().add_class("db-huge")
         db_unit = Gtk.Label(label="dB")
         db_unit.get_style_context().add_class("db-unit")
@@ -673,7 +696,7 @@ class OzBelApp:
         self.conn_time_lbl.set_halign(Gtk.Align.CENTER)
         box.pack_start(self.conn_time_lbl, False, False, 0)
 
-        btn = Gtk.Button(label="Baglantiy Kes")
+        btn = Gtk.Button(label="Bağlantıyı Kes")
         btn.get_style_context().add_class("red")
         btn.set_halign(Gtk.Align.CENTER)
         btn.connect("clicked", self.disconnect_teacher)
@@ -681,36 +704,43 @@ class OzBelApp:
 
         self.stack.add_named(box, "ready")
 
-    # ── Uyari ekrani ──
+    # ── Uyarı ekranı ──
     def build_alert(self):
-        b = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=14)
+        b = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=18)
         b.get_style_context().add_class("alert-win")
         b.set_halign(Gtk.Align.CENTER); b.set_valign(Gtk.Align.CENTER)
 
-        ico = Gtk.Label(); ico.set_markup('<span size="120000">X</span>')
-        b.pack_start(ico, False, False, 0)
+        badge = Gtk.Label(label="⚠  GÜRÜLTÜ UYARISI")
+        badge.get_style_context().add_class("alert-badge")
+        badge.set_halign(Gtk.Align.CENTER)
+        b.pack_start(badge, False, False, 0)
 
-        ti = Gtk.Label(label="LUTFEN SESSIZ OLUN!")
+        ti = Gtk.Label(label="LÜTFEN SESSİZ OLUN!")
         ti.get_style_context().add_class("alert-title")
         ti.set_halign(Gtk.Align.CENTER)
         b.pack_start(ti, False, False, 0)
 
         db_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
         db_row.set_halign(Gtk.Align.CENTER)
-        self.alert_db = Gtk.Label(label="--")
+        self.alert_db = Gtk.Label(label="—")
         self.alert_db.get_style_context().add_class("alert-db")
         unit = Gtk.Label(label="dB")
         unit.get_style_context().add_class("alert-unit")
         unit.set_valign(Gtk.Align.END)
-        unit.set_margin_bottom(18)
+        unit.set_margin_bottom(28)
         db_row.pack_start(self.alert_db, False, False, 0)
         db_row.pack_start(unit, False, False, 0)
         b.pack_start(db_row, False, False, 0)
 
-        sub = Gtk.Label(label="Kulak sagligi icin ses seviyesi 90 dB'nin altinda olmalidir")
+        sub = Gtk.Label(label="Kulak sağlığı için ses seviyesi 90 dB'nin altında olmalıdır")
         sub.get_style_context().add_class("alert-sub")
         sub.set_halign(Gtk.Align.CENTER)
         b.pack_start(sub, False, False, 0)
+
+        self.alert_class = Gtk.Label(label="")
+        self.alert_class.get_style_context().add_class("alert-class")
+        self.alert_class.set_halign(Gtk.Align.CENTER)
+        b.pack_start(self.alert_class, False, False, 0)
 
         self.stack.add_named(b, "alert")
 
@@ -721,7 +751,7 @@ class OzBelApp:
 
     # ── Olaylar ──
     def on_teacher_connected(self):
-        self.pill.set_text("Telefon baglandi -- mikrofon bekleniyor...")
+        self.pill.set_text("📱 Telefon bağlandı — mikrofon bekleniyor…")
         ctx = self.pill.get_style_context()
         ctx.remove_class("pill"); ctx.remove_class("pill-warn")
         ctx.add_class("pill-ok")
@@ -729,7 +759,7 @@ class OzBelApp:
     def on_teacher_gone(self):
         self._stop_timer()
         self.restore_main()
-        self.pill.set_text("Baglanti kesildi -- tekrar QR okutun")
+        self.pill.set_text("⚠ Bağlantı kesildi — tekrar QR okutun")
         ctx = self.pill.get_style_context()
         ctx.remove_class("pill-ok"); ctx.remove_class("pill")
         ctx.add_class("pill-warn")
@@ -751,7 +781,7 @@ class OzBelApp:
             return False
         elapsed = int(time.time() - self.connect_time)
         m, s = divmod(elapsed, 60)
-        self.conn_time_lbl.set_text(f"Bagli: {m}d {s:02d}s")
+        self.conn_time_lbl.set_text(f"Bağlı: {m} dk {s:02d} sn")
         return True
 
     def _stop_timer(self):
@@ -772,7 +802,7 @@ class OzBelApp:
         self.hide_alert()
         self.show_lesson_summary()
         self.restore_main()
-        self.pill.set_text("Ogretmen bekleniyor...")
+        self.pill.set_text("Öğretmen bekleniyor…")
         ctx = self.pill.get_style_context()
         ctx.remove_class("pill-ok"); ctx.remove_class("pill-warn")
         ctx.add_class("pill")
@@ -784,14 +814,14 @@ class OzBelApp:
         log_stats(class_name, self.alert_count, self.alert_max_db)
 
         if self.alert_count == 0:
-            msg = "Bu ders boyunca hic gurultu uyarisi verilmedi."
-            sec = "Sinif tum ders boyunca 90 dB sinirinin altinda kaldi."
+            msg = "Bu ders boyunca hiç gürültü uyarısı verilmedi. 👏"
+            sec = "Sınıf tüm ders boyunca 90 dB sınırının altında kaldı."
         else:
-            msg = f"Ders Ozeti -- {self.alert_count} kez uyari verildi"
+            msg = f"Ders Özeti — {self.alert_count} kez uyarı verildi"
             sec = (
-                f"Uyari sayisi   : {self.alert_count} kez\n"
-                f"En yuksek ses  : {self.alert_max_db} dB\n\n"
-                "Kulak sagligi icin ses seviyesinin 90 dB altinda tutulmasi onerilir."
+                f"🔔  Uyarı sayısı  : {self.alert_count} kez\n"
+                f"📈  En yüksek ses : {self.alert_max_db} dB\n\n"
+                "Kulak sağlığı için ses seviyesinin 90 dB altında tutulması önerilir."
             )
         dlg = Gtk.MessageDialog(
             transient_for=self.win,
@@ -807,10 +837,11 @@ class OzBelApp:
         if self.tray:
             self.tray.set_visible(False)
         self.stack.set_visible_child_name("setup")
+        self._show_corners()
         self.win.show_all()
         self.win.present()
 
-    # ── Uyari ──
+    # ── Uyarı ──
     def show_alert(self, db):
         self.alert_db.set_text(f"{db}")
         if db > self.alert_max_db:
@@ -818,11 +849,15 @@ class OzBelApp:
         if not self.alert_open:
             self.alert_open  = True
             self.alert_count += 1
+            cn = self.cfg.get("class_name", "")
+            self.alert_class.set_text(f"📍 {cn}" if cn else "")
+            self._hide_corners()
             self.stack.set_visible_child_name("alert")
             self.win.show_all()
+            self.alert_class.set_visible(bool(cn))
+            self._hide_corners()
             self.win.fullscreen()
             self.win.present()
-        # Ses -- 3 saniye arayla cal
         now = time.time()
         if now - self._sound_cooldown >= 3:
             self._sound_cooldown = now
@@ -838,6 +873,7 @@ class OzBelApp:
         if self.alert_open:
             self.alert_open = False
             self.win.unfullscreen()
+            self._show_corners()
             self.stack.set_visible_child_name("ready")
             self.win.hide()
 
@@ -845,7 +881,7 @@ class OzBelApp:
         self._stop_timer()
         self.relay.put("control", "disconnect")
         self.restore_main()
-        self.pill.set_text("Ogretmen bekleniyor...")
+        self.pill.set_text("Öğretmen bekleniyor…")
         ctx = self.pill.get_style_context()
         ctx.remove_class("pill-ok"); ctx.remove_class("pill-warn")
         ctx.add_class("pill")
@@ -865,8 +901,8 @@ if __name__ == "__main__":
     if "XXXX" in FIREBASE_DB or "XXXX" in NETLIFY_URL:
         dlg = Gtk.MessageDialog(
             message_type=Gtk.MessageType.WARNING, buttons=Gtk.ButtonsType.OK,
-            text="OzBel yapilandirilmamis")
+            text="ÖzBel yapılandırılmamış")
         dlg.format_secondary_text(
-            "ozbel.py icindeki FIREBASE_DB ve NETLIFY_URL adreslerini doldurun.")
+            "ozbel.py içindeki FIREBASE_DB ve NETLIFY_URL adreslerini doldurun.")
         dlg.run(); dlg.destroy()
     OzBelApp().run()

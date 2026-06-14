@@ -1,7 +1,11 @@
 {
-  "version": "1.2.1",
+  "version": "1.2.2",
   "url": "https://raw.githubusercontent.com/ozguroyunuzmn/ozbel/main/ozbel.py",
   "changelog": [
+    "Tum arayuz tam Turkce karakterlerle duzeltildi (Ozbel -> OzBel)",
+    "Uyari ekrani yeniden tasarlandi - daha buyuk, sinif adi gosteriyor",
+    "Uyari sirasinda kose butonlari ve QR gizleniyor",
+    "Guncelleme onbellek atlama eklendi (artik aninda gelir)",
     "Sinif degistir butonuna sifre korumasi eklendi",
     "Ilk acilista otomatik sinif sorma kaldirildi",
     "Sinif adi kurulumda sorulur, ayarlanabilir hale getirildi",
