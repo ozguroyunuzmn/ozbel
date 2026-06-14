@@ -18,7 +18,7 @@ FIREBASE_DB = "https://ozbel-eb6af-default-rtdb.europe-west1.firebasedatabase.ap
 NETLIFY_URL = "https://glistening-fudge-bca794.netlify.app"
 # ==============================================
 
-APP_VERSION = "1.4.0"
+APP_VERSION = "1.4.1"
 UPDATE_JSON = "https://raw.githubusercontent.com/ozguroyunuzmn/ozbel/main/version.json"
 
 SESSION   = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
@@ -307,6 +307,7 @@ class OzBelApp:
         self._sound_cooldown = 0
         self.loud_start   = None   # 90 dB'in surekli asilmaya basladigi an
         self.last_loud    = 0      # son 90+ olcum zamani
+        self.mic_active   = False  # ready ekranina gecildi mi
 
         self.relay = FirebaseRelay(self)
         self.relay.start()
@@ -894,6 +895,8 @@ class OzBelApp:
 
     def on_teacher_gone(self):
         self._stop_timer()
+        self.loud_start = None
+        self.mic_active = False
         self.restore_main()
         self.pill.set_text("⚠ Bağlantı kesildi — tekrar QR okutun")
         ctx = self.pill.get_style_context()
@@ -901,6 +904,9 @@ class OzBelApp:
         ctx.add_class("pill-warn")
 
     def on_mic_ready(self):
+        if self.mic_active:
+            return  # zaten gecildi
+        self.mic_active   = True
         self.connect_time = time.time()
         self.stack.set_visible_child_name("ready")
         self.win.hide()
@@ -928,6 +934,10 @@ class OzBelApp:
         self.conn_time_lbl.set_text("")
 
     def on_db(self, db):
+        # dB akiyorsa mikrofon kesin aktiftir; "mic" event'i kacsa bile ekrani gecir
+        if not self.mic_active:
+            self.on_mic_ready()
+
         self.db_live.set_text(f"{db}  dB")
         self.dbwin_val.set_text(f"{db}  dB")
 
@@ -957,6 +967,7 @@ class OzBelApp:
         self.alert_count  = 0
         self.alert_max_db = 0
         self.loud_start   = None
+        self.mic_active   = False
 
     def show_lesson_summary(self):
         class_name = self.cfg.get("class_name", "")
@@ -1029,6 +1040,7 @@ class OzBelApp:
     def disconnect_teacher(self, *_):
         self._stop_timer()
         self.loud_start = None
+        self.mic_active = False
         self.relay.put("control", "disconnect")
         self.restore_main()
         self.pill.set_text("Öğretmen bekleniyor…")

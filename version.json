@@ -1,9 +1,8 @@
 {
-  "version": "1.4.0",
+  "version": "1.4.1",
   "url": "https://raw.githubusercontent.com/ozguroyunuzmn/ozbel/main/ozbel.py",
   "changelog": [
-    "Akilli gurultu tespiti - ogretmen konusmasina otmez, sinif gurultusune oter",
-    "90 dB ancak 2.5 sn SUREKLI asilirsa uyari verilir (konusma duraklari elenir)",
-    "Telefon hassasiyet onerisi duzeltildi (telefonlar icin Orta)"
+    "Mikrofon bekleniyor ekraninda donma hatasi giderildi",
+    "dB verisi gelince ekran otomatik gecer (mic event'i kacsa bile takilmaz)"
   ]
 }
