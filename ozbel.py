@@ -18,7 +18,7 @@ FIREBASE_DB = "https://ozbel-eb6af-default-rtdb.europe-west1.firebasedatabase.ap
 NETLIFY_URL = "https://glistening-fudge-bca794.netlify.app"
 # ==============================================
 
-APP_VERSION = "1.2.2"
+APP_VERSION = "1.2.3"
 UPDATE_JSON = "https://raw.githubusercontent.com/ozguroyunuzmn/ozbel/main/version.json"
 
 SESSION   = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
@@ -354,14 +354,45 @@ class OzBelApp:
         elif state == "available":
             latest, py_url, changelog = args
             log_text = "\n".join(f"• {c}" for c in changelog) if changelog else "—"
-            dlg = Gtk.MessageDialog(transient_for=self.win,
-                message_type=Gtk.MessageType.QUESTION,
-                buttons=Gtk.ButtonsType.YES_NO,
-                text=f"Güncelleme Mevcut — v{latest}")
-            dlg.format_secondary_text(
-                f"Mevcut sürüm: {APP_VERSION}  →  Yeni sürüm: {latest}\n\n"
-                f"Değişiklikler:\n{log_text}\n\n"
-                "Güncelleme indirilip uygulama yeniden başlatılacak. Devam edilsin mi?")
+
+            dlg = Gtk.Dialog(title="Güncelleme Mevcut", transient_for=self.win, modal=True)
+            dlg.set_default_size(440, 300)
+            dlg.add_button("Vazgeç", Gtk.ResponseType.NO)
+            ok_btn = dlg.add_button("Güncelle", Gtk.ResponseType.YES)
+            ok_btn.get_style_context().add_class("blue")
+            dlg.set_default_response(Gtk.ResponseType.YES)
+
+            content = dlg.get_content_area()
+            content.set_spacing(10)
+            content.set_margin_top(16); content.set_margin_bottom(8)
+            content.set_margin_start(20); content.set_margin_end(20)
+
+            head = Gtk.Label()
+            head.set_markup(f"<b>v{APP_VERSION}  →  v{latest}</b>")
+            head.set_halign(Gtk.Align.START)
+            content.pack_start(head, False, False, 0)
+
+            yenilik = Gtk.Label(label="Yenilikler:")
+            yenilik.set_halign(Gtk.Align.START)
+            content.pack_start(yenilik, False, False, 0)
+
+            # Kaydırılabilir changelog — uzasa bile butonlar görünür kalır
+            scroll = Gtk.ScrolledWindow()
+            scroll.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+            scroll.set_min_content_height(120)
+            scroll.set_max_content_height(160)
+            log_lbl = Gtk.Label(label=log_text)
+            log_lbl.set_halign(Gtk.Align.START)
+            log_lbl.set_xalign(0)
+            log_lbl.set_line_wrap(True)
+            scroll.add(log_lbl)
+            content.pack_start(scroll, True, True, 0)
+
+            foot = Gtk.Label(label="İndirilip uygulama yeniden başlatılacak.")
+            foot.set_halign(Gtk.Align.START)
+            content.pack_start(foot, False, False, 0)
+
+            dlg.show_all()
             resp = dlg.run(); dlg.destroy()
             if resp == Gtk.ResponseType.YES:
                 threading.Thread(target=self._do_install_update,

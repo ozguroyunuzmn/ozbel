@@ -1,10 +1,8 @@
 {
-  "version": "1.2.2",
+  "version": "1.2.3",
   "url": "https://raw.githubusercontent.com/ozguroyunuzmn/ozbel/main/ozbel.py",
   "changelog": [
-    "Tum arayuz tam Turkce karakterlerle duzeltildi (Ozbel -> OzBel)",
-    "Uyari ekrani yeniden tasarlandi - daha buyuk, sinif adi gosteriyor",
-    "Uyari sirasinda kose butonlari ve QR gizleniyor",
-    "Guncelleme onbellek atlama eklendi (artik aninda gelir)"
+    "Guncelleme penceresi kaydirilabilir yapildi - Guncelle butonu hep gorunur",
+    "Degisiklik listesi kisaltildi"
   ]
 }
