@@ -107,6 +107,16 @@ body.flash-warn { animation:flashRed .5s ease; }
   background:var(--card); border:1px solid var(--border); border-radius:12px; }
 .mic-feat-icon { font-size:18px; }
 .mic-feat-txt { font-size:12px; color:var(--muted); }
+
+/* Hassasiyet ayarı */
+.sens-wrap { width:100%; background:var(--card); border:1px solid var(--border);
+  border-radius:14px; padding:14px 18px; }
+.sens-label { font-size:12px; color:var(--muted); margin-bottom:8px;
+  display:flex; justify-content:space-between; align-items:center; }
+.sens-label span { font-size:13px; font-weight:700; color:var(--text); }
+input[type=range] { width:100%; accent-color:var(--blue); height:6px; cursor:pointer; }
+.sens-ticks { display:flex; justify-content:space-between;
+  font-size:10px; color:var(--muted); margin-top:4px; }
 </style>
 </head>
 <body>
@@ -195,6 +205,12 @@ body.flash-warn { animation:flashRed .5s ease; }
 
   <div class="status st-ok" id="status-pill"><div class="dot"></div><span id="status-txt">Normal Seviye</span></div>
 
+  <div class="sens-wrap">
+    <div class="sens-label">Mikrofon Hassasiyeti <span id="calib-val">97</span></div>
+    <input type="range" id="calib-slider" min="80" max="115" value="97" oninput="onCalibChange(this.value)">
+    <div class="sens-ticks"><span>Daha az duyarlı</span><span>Daha duyarlı</span></div>
+  </div>
+
   <button class="btn btn-red" onclick="lessonEnd()">🏁 Dersi Bitir</button>
   <p class="note">Telefon ekranı açık kalmalı — ölçüm devam eder.</p>
 </div>
@@ -224,7 +240,7 @@ body.flash-warn { animation:flashRed .5s ease; }
 
 // ═══════════════ CONFIG ═══════════════
 const FIREBASE_DB = "https://ozbel-eb6af-default-rtdb.europe-west1.firebasedatabase.app";
-const CALIB = 97;
+let CALIB = parseInt(localStorage.getItem('ozbel_calib') || '97');
 // ═══════════════════════════════════════
 
 const $ = id => document.getElementById(id);
@@ -365,6 +381,21 @@ keepAwake();
 window.addEventListener('pagehide', () => { if (!ended) fbPut('teacher', false); });
 
 if (sessionId) showScreen('s-mic');
+
+function onCalibChange(val) {
+  CALIB = parseInt(val);
+  $('calib-val').textContent = val;
+  localStorage.setItem('ozbel_calib', val);
+}
+
+// Kaydırıcıyı localStorage'dan başlat
+(function() {
+  const saved = localStorage.getItem('ozbel_calib');
+  if (saved) {
+    const s = $('calib-slider');
+    if (s) { s.value = saved; $('calib-val').textContent = saved; }
+  }
+})();
 </script>
 </body>
 </html>

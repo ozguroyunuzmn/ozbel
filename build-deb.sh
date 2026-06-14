@@ -4,7 +4,7 @@
 # Çıktı: ozbel_1.0.0_all.deb  → Pardus'ta çift tıkla kur
 set -e
 
-VERSION="1.0.0"
+VERSION=$(grep 'APP_VERSION' ozbel.py | head -1 | grep -oP '[\d.]+' | head -1)
 PKG="ozbel_${VERSION}_all"
 
 echo "▶ .deb yapısı oluşturuluyor..."
