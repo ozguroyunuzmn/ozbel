@@ -406,6 +406,8 @@ async function requestMic() {
     analyser.fftSize = 2048; analyser.smoothingTimeConstant = 0.4;
     audioCtx.createMediaStreamSource(stream).connect(analyser);
     $('sil').play().catch(() => {});
+    // Onceki oturumdan kalan "disconnect" komutunu temizle
+    await fbPut('control', null);
     await fbPut('teacher', true);
     await fbPut('mic', true);
     listenControl();
@@ -421,7 +423,15 @@ async function requestMic() {
 function listenControl() {
   try {
     es = new EventSource(`${FIREBASE_DB}/sessions/${sessionId}/control.json`);
-    const h = e => { try { const d = JSON.parse(e.data); if (d && d.data === 'disconnect') finish(); } catch (_) {} };
+    let firstEvent = true;
+    const h = e => {
+      try {
+        const d = JSON.parse(e.data);
+        // Baglaninca gelen ilk (mevcut) deger yok sayilir; sadece sonraki komutlar dinlenir
+        if (firstEvent) { firstEvent = false; return; }
+        if (d && d.data === 'disconnect') finish();
+      } catch (_) {}
+    };
     es.addEventListener('put', h); es.addEventListener('patch', h);
   } catch (_) {}
 }
