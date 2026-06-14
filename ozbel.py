@@ -18,7 +18,7 @@ FIREBASE_DB = "https://ozbel-eb6af-default-rtdb.europe-west1.firebasedatabase.ap
 NETLIFY_URL = "https://glistening-fudge-bca794.netlify.app"
 # ==============================================
 
-APP_VERSION = "1.3.0"
+APP_VERSION = "1.3.1"
 UPDATE_JSON = "https://raw.githubusercontent.com/ozguroyunuzmn/ozbel/main/version.json"
 
 SESSION   = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
@@ -186,6 +186,8 @@ CSS = (
 "               background:#0d2016; border:1px solid #1c4030;"
 "               border-radius:999px; padding:10px 28px; }\n"
 ".ready-sub   { color:#94a3b8; font-size:15px; }\n"
+".dock { background-color:#121821; border:1px solid #2a3646;"
+"        border-radius:18px; }\n"
 ".conn-timer  { color:#4a5568; font-size:13px; font-weight:600; }\n"
 ".class-badge { color:#fbbf24; font-size:12px; font-weight:700;"
 "               background:#1f1604; border:1px solid #4a3812;"
@@ -547,7 +549,8 @@ class OzBelApp:
             self.tray = Gtk.StatusIcon.new_from_icon_name("audio-volume-high")
             self.tray.set_title("ÖzBel")
             self.tray.set_tooltip_text("ÖzBel — Kulak Sağlığı")
-            self.tray.connect("activate", lambda *_: self.show_dbwin())
+            # Hoparlor ikonuna basinca sol alt kutu gizlen/gorun (toggle)
+            self.tray.connect("activate", lambda *_: self.toggle_dbwin())
             self.tray.connect("popup-menu", self.on_tray_menu)
             self.tray.set_visible(False)
         except Exception:
@@ -558,37 +561,82 @@ class OzBelApp:
         h = Gtk.MenuItem(label="ÖzBel — Yönetim")
         h.set_sensitive(False); m.append(h)
         m.append(Gtk.SeparatorMenuItem())
-        i1 = Gtk.MenuItem(label="Desibel Ölç")
-        i1.connect("activate", lambda *_: self.show_dbwin()); m.append(i1)
+        i1 = Gtk.MenuItem(label="Göster / Gizle")
+        i1.connect("activate", lambda *_: self.toggle_dbwin()); m.append(i1)
         i2 = Gtk.MenuItem(label="Bağlantıyı Kes")
         i2.connect("activate", self.disconnect_teacher); m.append(i2)
         m.show_all()
         m.popup(None, None, Gtk.StatusIcon.position_menu, icon, button, t)
 
-    # ── Küçük Desibel penceresi ──
+    # ── Sol alt sabit kontrol kutusu ──
     def build_dbwin(self):
-        self.dbwin = Gtk.Window(title="ÖzBel — Desibel")
-        self.dbwin.set_default_size(280, 180)
-        self.dbwin.set_keep_above(True)
+        self.dbwin = Gtk.Window(type=Gtk.WindowType.TOPLEVEL)
+        self.dbwin.set_decorated(False)        # baslik cubugu yok -> tasinamaz
         self.dbwin.set_resizable(False)
+        self.dbwin.set_keep_above(True)
+        self.dbwin.set_skip_taskbar_hint(True)
+        self.dbwin.set_skip_pager_hint(True)
+        self.dbwin.set_accept_focus(False)
         self.dbwin.connect("delete-event", lambda *a: (self.dbwin.hide() or True))
-        b = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
-        b.set_halign(Gtk.Align.CENTER); b.set_valign(Gtk.Align.CENTER)
-        b.set_margin_top(14); b.set_margin_bottom(14)
-        tl = Gtk.Label(); tl.set_markup('<span foreground="#8b949e">Anlık Ses Seviyesi</span>')
-        b.pack_start(tl, False, False, 0)
+
+        self.db_visible = False
+
+        b = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
+        b.get_style_context().add_class("dock")
+        b.set_margin_top(16); b.set_margin_bottom(16)
+        b.set_margin_start(18); b.set_margin_end(18)
+
+        hdr = Gtk.Label(); hdr.set_markup('<b>ÖzBel</b>')
+        hdr.set_halign(Gtk.Align.CENTER)
+        b.pack_start(hdr, False, False, 0)
+
         self.dbwin_val = Gtk.Label(label="—  dB")
         self.dbwin_val.get_style_context().add_class("db-live")
+        self.dbwin_val.set_halign(Gtk.Align.CENTER)
+        self.dbwin_val.set_no_show_all(True)   # show_all gizliyi acmasin
         b.pack_start(self.dbwin_val, False, False, 0)
-        btn = Gtk.Button(label="Bağlantıyı Kes")
-        btn.get_style_context().add_class("outline")
-        btn.connect("clicked", self.disconnect_teacher)
-        b.pack_start(btn, False, False, 0)
+
+        self.db_btn = Gtk.Button(label="Desibel Ölç")
+        self.db_btn.get_style_context().add_class("outline")
+        self.db_btn.connect("clicked", self.toggle_db_value)
+        b.pack_start(self.db_btn, False, False, 0)
+
+        dc = Gtk.Button(label="Bağlantıyı Kes")
+        dc.get_style_context().add_class("red")
+        dc.connect("clicked", self.disconnect_teacher)
+        b.pack_start(dc, False, False, 0)
+
         self.dbwin.add(b)
 
+    def toggle_db_value(self, *_):
+        self.db_visible = not self.db_visible
+        self.dbwin_val.set_visible(self.db_visible)
+        self.db_btn.set_label("Gizle" if self.db_visible else "Desibel Ölç")
+        self._place_dbwin()
+
+    def _place_dbwin(self):
+        # Sol alt koseye sabitle
+        try:
+            screen = self.dbwin.get_screen()
+            sh = screen.get_height()
+            _, h = self.dbwin.get_size()
+            self.dbwin.move(20, sh - h - 60)
+        except Exception:
+            pass
+
     def show_dbwin(self):
-        self.dbwin.show_all()
-        self.dbwin.present()
+        self.dbwin_val.set_visible(self.db_visible)
+        self.dbwin.show()
+        self.dbwin.get_child().show_all()
+        self.dbwin_val.set_visible(self.db_visible)
+        self._place_dbwin()
+        GLib.timeout_add(50, lambda: (self._place_dbwin(), False)[1])
+
+    def toggle_dbwin(self):
+        if self.dbwin.get_visible():
+            self.dbwin.hide()
+        else:
+            self.show_dbwin()
 
     def hide_dbwin(self):
         try: self.dbwin.hide()
