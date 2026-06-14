@@ -18,13 +18,17 @@ FIREBASE_DB = "https://ozbel-eb6af-default-rtdb.europe-west1.firebasedatabase.ap
 NETLIFY_URL = "https://glistening-fudge-bca794.netlify.app"
 # ==============================================
 
-APP_VERSION = "1.3.2"
+APP_VERSION = "1.4.0"
 UPDATE_JSON = "https://raw.githubusercontent.com/ozguroyunuzmn/ozbel/main/version.json"
 
 SESSION   = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
 APP_DIR   = os.path.dirname(os.path.abspath(__file__))
 THRESHOLD = 90
 CLASS_PASSWORD = "etap+pardus+ozbel!"
+
+# Gurultu tespiti: ogretmen konusmasi (dalgali, duraklı) elenir, sinif gurultusu (surekli) yakalanir.
+SUSTAIN_SEC   = 2.5   # 90 dB'i bu kadar sn SUREKLI asarsa gurultu say
+GAP_TOLERANCE = 0.7   # bu kadar sn'den uzun dusus sayaci sifirlar (konusma duraklari)
 
 USER_DIR    = os.path.join(os.path.expanduser("~"), ".local", "share", "ozbel")
 CONFIG_FILE = os.path.join(USER_DIR, "config.json")
@@ -301,6 +305,8 @@ class OzBelApp:
         self.connect_time = None
         self.timer_src    = None
         self._sound_cooldown = 0
+        self.loud_start   = None   # 90 dB'in surekli asilmaya basladigi an
+        self.last_loud    = 0      # son 90+ olcum zamani
 
         self.relay = FirebaseRelay(self)
         self.relay.start()
@@ -924,8 +930,20 @@ class OzBelApp:
     def on_db(self, db):
         self.db_live.set_text(f"{db}  dB")
         self.dbwin_val.set_text(f"{db}  dB")
+
+        now = time.time()
         if db >= THRESHOLD:
-            self.show_alert(db)
+            self.last_loud = now
+            if self.loud_start is None:
+                self.loud_start = now
+            # 90 dB SUREKLI yeterince uzun asildiysa => gercek gurultu
+            if now - self.loud_start >= SUSTAIN_SEC:
+                self.show_alert(db)
+        else:
+            # Kisa dususler (konusma duraklari) sayaci sifirlamasin;
+            # ancak bosluk toleransi asilirsa gurultu bitti say
+            if self.loud_start is not None and now - self.last_loud > GAP_TOLERANCE:
+                self.loud_start = None
 
     def on_lesson_end(self):
         self._stop_timer()
@@ -938,6 +956,7 @@ class OzBelApp:
         ctx.add_class("pill")
         self.alert_count  = 0
         self.alert_max_db = 0
+        self.loud_start   = None
 
     def show_lesson_summary(self):
         class_name = self.cfg.get("class_name", "")
@@ -1009,6 +1028,7 @@ class OzBelApp:
 
     def disconnect_teacher(self, *_):
         self._stop_timer()
+        self.loud_start = None
         self.relay.put("control", "disconnect")
         self.restore_main()
         self.pill.set_text("Öğretmen bekleniyor…")

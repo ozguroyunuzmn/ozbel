@@ -543,10 +543,8 @@ async function detectDevice() {
   }
 
   // Cihaz tipine göre makul hassasiyet (buton setiyle uyumlu değerler)
-  if (/iPhone|iPod/.test(ua)) calib = 97;             // iOS mikrofonları dengeli
-  else if (/iPad|Tablet|SM-T|\bTab\b/.test(ua)) calib = 100;
-  else if (/Android/.test(ua)) calib = 100;           // Android genelde biraz kısık
-  else calib = 97;
+  if (/SM-T|\bTab\b|iPad|Tablet/.test(ua)) calib = 100;  // tabletler biraz kısık
+  else calib = 97;                                       // telefonlar (iOS + Android): Orta
 
   smartCalib = calib;
   const lvl = { 105:"Çok Duyarlı", 100:"Duyarlı", 97:"Orta", 92:"Az Duyarlı", 87:"Duyarsız" }[calib] || "Orta";
