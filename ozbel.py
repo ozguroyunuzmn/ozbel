@@ -18,7 +18,7 @@ FIREBASE_DB = "https://ozbel-eb6af-default-rtdb.europe-west1.firebasedatabase.ap
 NETLIFY_URL = "https://glistening-fudge-bca794.netlify.app"
 # ==============================================
 
-APP_VERSION = "2.1.0"
+APP_VERSION = "2.2.0"
 UPDATE_JSON = "https://raw.githubusercontent.com/ozguroyunuzmn/ozbel/main/version.json"
 
 SESSION   = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
@@ -168,21 +168,6 @@ CSS = (
 "@keyframes dbGlow { 0% { text-shadow:0 0 30px rgba(255,23,68,0.6); }"
 "                    50% { text-shadow:0 0 70px rgba(255,23,68,1); }"
 "                    100% { text-shadow:0 0 30px rgba(255,23,68,0.6); } }\n"
-"@keyframes welcomePulse { 0% { box-shadow:0 0 25px -10px rgba(59,130,246,0.5); opacity:0.92; }"
-"                          50% { box-shadow:0 0 60px -4px rgba(59,130,246,0.95); opacity:1; }"
-"                          100% { box-shadow:0 0 25px -10px rgba(59,130,246,0.5); opacity:0.92; } }\n"
-"@keyframes qrPulse { 0% { box-shadow:0 0 0 3px rgba(59,130,246,0.45), 0 0 30px -8px rgba(59,130,246,0.5); }"
-"                     50% { box-shadow:0 0 0 4px rgba(96,165,250,0.95), 0 0 70px -4px rgba(96,165,250,0.95); }"
-"                     100% { box-shadow:0 0 0 3px rgba(59,130,246,0.45), 0 0 30px -8px rgba(59,130,246,0.5); } }\n"
-"@keyframes arrowNudge { 0% { opacity:0.35; } 50% { opacity:1; } 100% { opacity:0.35; } }\n"
-".welcome { color:#dbeafe; font-size:21px; font-weight:800; letter-spacing:.3px;"
-"           background:linear-gradient(145deg,#16294a,#0e1b30); border:1px solid #2a4a80;"
-"           border-radius:999px; padding:12px 32px;"
-"           animation:welcomePulse 2.2s ease-in-out infinite; }\n"
-".qr-frame { background:#ffffff; border-radius:18px; padding:14px;"
-"            animation:qrPulse 1.9s ease-in-out infinite; }\n"
-".qr-arrow { color:#60a5fa; font-size:28px; font-weight:900;"
-"            animation:arrowNudge 1.3s ease-in-out infinite; }\n"
 ".logo-text  { color:#f0f4f9; font-size:50px; font-weight:900; letter-spacing:-2px;"
 "              text-shadow:0 2px 20px rgba(255,255,255,0.12); }\n"
 ".logo-blue  { color:#3b82f6; font-size:50px; font-weight:900; letter-spacing:-2px;"
@@ -873,13 +858,6 @@ class OzBelApp:
         sub.set_halign(Gtk.Align.CENTER)
         box.pack_start(sub, False, False, 0)
 
-        # Dikkat çeken karşılama çağrısı (nabız gibi parlar)
-        welcome = Gtk.Label(label="👋  Hoş Geldiniz Öğretmenim — Bağlanmak için QR'ı Okutun")
-        welcome.get_style_context().add_class("welcome")
-        welcome.set_halign(Gtk.Align.CENTER)
-        welcome.set_margin_top(6)
-        box.pack_start(welcome, False, False, 0)
-
         hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=32)
         hbox.set_halign(Gtk.Align.CENTER)
 
@@ -917,17 +895,8 @@ class OzBelApp:
 
         qr_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
         qr_box.set_halign(Gtk.Align.CENTER)
-        arrow = Gtk.Label(label="👇  Telefonunuzla Buradan Bağlanın")
-        arrow.get_style_context().add_class("qr-arrow")
-        arrow.set_halign(Gtk.Align.CENTER)
-        qr_box.pack_start(arrow, False, False, 0)
-        # QR'ı beyaz, parlayan çerçeveye al (göz buraya gitsin)
-        qr_frame = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
-        qr_frame.get_style_context().add_class("qr-frame")
-        qr_frame.set_halign(Gtk.Align.CENTER)
         self.qr_img = Gtk.Image()
-        qr_frame.pack_start(self.qr_img, False, False, 0)
-        qr_box.pack_start(qr_frame, False, False, 0)
+        qr_box.pack_start(self.qr_img, False, False, 0)
         self.code_lbl = Gtk.Label(label=SESSION)
         self.code_lbl.get_style_context().add_class("code")
         self.code_lbl.set_halign(Gtk.Align.CENTER)
