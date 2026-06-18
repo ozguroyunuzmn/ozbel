@@ -1,9 +1,9 @@
 {
-  "version": "2.2.2",
+  "version": "2.2.3",
   "url": "https://raw.githubusercontent.com/ozguroyunuzmn/ozbel/main/ozbel.py",
   "changelog": [
-    "Guncelleme denetimi artik GitHub API ile - 5 dakikalik onbellege takilmaz, aninda gorur",
-    "Acilis ekrani sade haline donduruldu",
-    "YAMNet modeli kendi sunucumuzda, model 1 yil cache (internet paketi yemez)"
+    "Uyari sesi degisti - artik ozel MP3 sesi calar (bell yerine)",
+    "Daha az duyarli - AI acikken sadece TAZE gurultu karariyla oter, konusmaya otmez",
+    "Yapay zeka gurultu karari icin belirgin fark sarti (yanlis otme azaldi)"
   ]
 }
