@@ -1,10 +1,10 @@
 {
-  "version": "2.0.0",
+  "version": "2.1.0",
   "url": "https://raw.githubusercontent.com/ozguroyunuzmn/ozbel/main/ozbel.py",
   "changelog": [
-    "YAPAY ZEKA eklendi - telefonda calisir, normal konusmaya otmez sadece gurultuye oter",
-    "90 dB artik ANLIK oter (5 sn bekleme kaldirildi)",
-    "Yapay zeka konusma/ugultu/bagiris/vurma/takirti ayirt eder",
-    "Ses telefondan cikmaz, veri sizdirmaz - model cihazda calisir (ucretsiz, kotasiz)"
+    "Acilis ekrani yenilendi - ogretmenin dikkatini ceken karsilama ve animasyonlar",
+    "QR kodu parlayan beyaz cerceve icinde, yanip sonen yonlendirme oku eklendi",
+    "YAMNet modeli artik kendi sunucumuzda - tfhub bagimliligi kaldirildi, daha guvenilir",
+    "Model 1 yil cache - ilk acilistan sonra internet paketi yemez"
   ]
 }
