@@ -1,9 +1,9 @@
 {
-  "version": "2.2.1",
+  "version": "2.2.2",
   "url": "https://raw.githubusercontent.com/ozguroyunuzmn/ozbel/main/ozbel.py",
   "changelog": [
-    "Acilis ekrani onceki sade haline geri donduruldu",
-    "YAMNet modeli kendi sunucumuzda - tfhub bagimliligi yok, daha guvenilir",
-    "Model 1 yil cache - ilk acilistan sonra internet paketi yemez"
+    "Guncelleme denetimi artik GitHub API ile - 5 dakikalik onbellege takilmaz, aninda gorur",
+    "Acilis ekrani sade haline donduruldu",
+    "YAMNet modeli kendi sunucumuzda, model 1 yil cache (internet paketi yemez)"
   ]
 }

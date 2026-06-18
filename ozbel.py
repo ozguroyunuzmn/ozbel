@@ -18,8 +18,12 @@ FIREBASE_DB = "https://ozbel-eb6af-default-rtdb.europe-west1.firebasedatabase.ap
 NETLIFY_URL = "https://glistening-fudge-bca794.netlify.app"
 # ==============================================
 
-APP_VERSION = "2.2.1"
-UPDATE_JSON = "https://raw.githubusercontent.com/ozguroyunuzmn/ozbel/main/version.json"
+APP_VERSION = "2.2.2"
+# GitHub API üzerinden okunur — raw CDN'in aksine query/no-cache'e saygı duyar,
+# böylece 5 dakikalık önbelleğe takılmadan anında günceli görür.
+GH_API      = "https://api.github.com/repos/ozguroyunuzmn/ozbel/contents"
+UPDATE_JSON = GH_API + "/version.json"
+PY_DOWNLOAD = GH_API + "/ozbel.py"
 
 SESSION   = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
 APP_DIR   = os.path.dirname(os.path.abspath(__file__))
@@ -383,12 +387,18 @@ class OzBelApp:
     def check_update(self, *_):
         threading.Thread(target=self._do_check_update, daemon=True).start()
 
+    def _gh_fetch(self, url, timeout=15):
+        # GitHub API'den ham dosya içeriği — raw CDN önbelleğine takılmaz
+        req = urllib.request.Request(url, headers={
+            "Accept": "application/vnd.github.raw",
+            "User-Agent": "ozbel-updater",
+            "Cache-Control": "no-cache",
+        })
+        return urllib.request.urlopen(req, timeout=timeout).read()
+
     def _do_check_update(self):
         try:
-            # Önbelleği atlamak için zaman damgası ekle
-            url = UPDATE_JSON + "?t=" + str(int(time.time()))
-            req = urllib.request.Request(url, headers={"Cache-Control": "no-cache"})
-            resp = urllib.request.urlopen(req, timeout=10).read()
+            resp = self._gh_fetch(UPDATE_JSON, timeout=10)
             info = json.loads(resp)
             latest    = info.get("version", "")
             py_url    = info.get("url", "")
@@ -474,10 +484,8 @@ class OzBelApp:
         try:
             os.makedirs(USER_DIR, exist_ok=True)
             dest = os.path.join(USER_DIR, "ozbel.py")
-            url = py_url + "?t=" + str(int(time.time()))
-            req = urllib.request.Request(url, headers={"Cache-Control": "no-cache"})
-            with urllib.request.urlopen(req, timeout=30) as r:
-                content = r.read()
+            # İndirme de API üzerinden — güncel .py'yi kesin alır (önbellek takılmaz)
+            content = self._gh_fetch(PY_DOWNLOAD, timeout=30)
             with open(dest, "wb") as f:
                 f.write(content)
             os.chmod(dest, 0o755)
