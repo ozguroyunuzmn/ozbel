@@ -520,8 +520,8 @@ async function initAImodel() {
   try {
     if (typeof tf === 'undefined') throw new Error('tf yok');
     await tf.ready();
-    yamnet = await tf.loadGraphModel(
-      'https://tfhub.dev/google/tfjs-model/yamnet/tfjs/1', { fromTFHub:true });
+    // Model kendi sitemizde barınır (tfhub'a bağımlı değil, aynı origin, cache'lenir)
+    yamnet = await tf.loadGraphModel('model/yamnet/model.json');
     classNames = await loadClassNames();
     aiReady = true;
   } catch (e) {
@@ -530,7 +530,8 @@ async function initAImodel() {
 }
 
 async function loadClassNames() {
-  const url = 'https://raw.githubusercontent.com/tensorflow/models/master/research/audioset/yamnet/yamnet_class_map.csv';
+  // Sınıf listesi de kendi sitemizde (raw.githubusercontent'e bağımlı değil)
+  const url = 'model/yamnet/yamnet_class_map.csv';
   const txt = await (await fetch(url)).text();
   return txt.trim().split('\n').slice(1).map(line => {
     const m = line.match(/^\d+,[^,]+,(.*)$/);
