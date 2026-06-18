@@ -1,11 +1,10 @@
 {
-  "version": "1.5.0",
+  "version": "2.0.0",
   "url": "https://raw.githubusercontent.com/ozguroyunuzmn/ozbel/main/ozbel.py",
   "changelog": [
-    "Ayarlar penceresi eklendi (sifre ile korumali)",
-    "Sinif adi, kac dB'de otecegi, sistemle baslatma ayarlanabilir",
-    "Sifre degistirme eklendi (varsayilan: etap+pardus!)",
-    "Ayarlarda Uygulamayi Tamamen Sil secenegi",
-    "Tum ayarlar yalnizca o tahtaya kaydedilir, digerlerini etkilemez"
+    "YAPAY ZEKA eklendi - telefonda calisir, normal konusmaya otmez sadece gurultuye oter",
+    "90 dB artik ANLIK oter (5 sn bekleme kaldirildi)",
+    "Yapay zeka konusma/ugultu/bagiris/vurma/takirti ayirt eder",
+    "Ses telefondan cikmaz, veri sizdirmaz - model cihazda calisir (ucretsiz, kotasiz)"
   ]
 }

@@ -18,7 +18,7 @@ FIREBASE_DB = "https://ozbel-eb6af-default-rtdb.europe-west1.firebasedatabase.ap
 NETLIFY_URL = "https://glistening-fudge-bca794.netlify.app"
 # ==============================================
 
-APP_VERSION = "1.5.0"
+APP_VERSION = "2.0.0"
 UPDATE_JSON = "https://raw.githubusercontent.com/ozguroyunuzmn/ozbel/main/version.json"
 
 SESSION   = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
@@ -27,9 +27,9 @@ THRESHOLD = 90
 DEFAULT_PASSWORD = "etap+pardus!"
 AUTOSTART_FILE = os.path.join(os.path.expanduser("~"), ".config", "autostart", "ozbel.desktop")
 
-# Gurultu tespiti: ogretmen konusmasi (dalgali, duraklı) elenir, sinif gurultusu (surekli) yakalanir.
-SUSTAIN_SEC   = 2.5   # 90 dB'i bu kadar sn SUREKLI asarsa gurultu say
-GAP_TOLERANCE = 0.7   # bu kadar sn'den uzun dusus sayaci sifirlar (konusma duraklari)
+# Gurultu tespiti telefondaki yapay zeka (YAMNet) ile yapilir:
+# ses telefonda siniflandirilir, sadece "gurultu" karari + dB tahtaya gelir.
+NOISE_FRESH_SEC = 3.0   # AI karari bu kadar sn icinde guncellendiyse gecerli say
 
 USER_DIR    = os.path.join(os.path.expanduser("~"), ".local", "share", "ozbel")
 CONFIG_FILE = os.path.join(USER_DIR, "config.json")
@@ -130,6 +130,8 @@ class FirebaseRelay(threading.Thread):
         if path == "/" and isinstance(d, dict):
             if d.get("teacher"): GLib.idle_add(self.app.on_teacher_connected)
             if d.get("mic"):     GLib.idle_add(self.app.on_mic_ready)
+            if "ai" in d:        GLib.idle_add(self.app.on_ai, bool(d["ai"]))
+            if "noise" in d:     GLib.idle_add(self.app.on_noise, bool(d["noise"]))
             if "db" in d and d["db"] is not None:
                 GLib.idle_add(self.app.on_db, int(d["db"]))
             if d.get("lesson") == "end": GLib.idle_add(self.app.on_lesson_end)
@@ -137,6 +139,10 @@ class FirebaseRelay(threading.Thread):
             GLib.idle_add(self.app.on_teacher_connected if d else self.app.on_teacher_gone)
         elif path == "/mic" and d:
             GLib.idle_add(self.app.on_mic_ready)
+        elif path == "/ai":
+            GLib.idle_add(self.app.on_ai, bool(d))
+        elif path == "/noise":
+            GLib.idle_add(self.app.on_noise, bool(d))
         elif path == "/db" and d is not None:
             GLib.idle_add(self.app.on_db, int(d))
         elif path == "/lesson" and d == "end":
@@ -309,9 +315,10 @@ class OzBelApp:
         self.connect_time = None
         self.timer_src    = None
         self._sound_cooldown = 0
-        self.loud_start   = None   # 90 dB'in surekli asilmaya basladigi an
-        self.last_loud    = 0      # son 90+ olcum zamani
         self.mic_active   = False  # ready ekranina gecildi mi
+        self.ai_active    = False  # telefonda YAMNet calisiyor mu
+        self.last_noise   = False  # AI son karari: gurultu mu
+        self.noise_time   = 0      # son AI karari zamani
 
         self.relay = FirebaseRelay(self)
         self.relay.start()
@@ -1032,7 +1039,7 @@ class OzBelApp:
 
     def on_teacher_gone(self):
         self._stop_timer()
-        self.loud_start = None
+        self.last_noise = False
         self.mic_active = False
         self.restore_main()
         self.pill.set_text("⚠ Bağlantı kesildi — tekrar QR okutun")
@@ -1070,6 +1077,13 @@ class OzBelApp:
         self.connect_time = None
         self.conn_time_lbl.set_text("")
 
+    def on_ai(self, active):
+        self.ai_active = active
+
+    def on_noise(self, is_noise):
+        self.last_noise = is_noise
+        self.noise_time = time.time()
+
     def on_db(self, db):
         # dB akiyorsa mikrofon kesin aktiftir; "mic" event'i kacsa bile ekrani gecir
         if not self.mic_active:
@@ -1078,19 +1092,17 @@ class OzBelApp:
         self.db_live.set_text(f"{db}  dB")
         self.dbwin_val.set_text(f"{db}  dB")
 
-        now = time.time()
-        if db >= self.threshold:
-            self.last_loud = now
-            if self.loud_start is None:
-                self.loud_start = now
-            # 90 dB SUREKLI yeterince uzun asildiysa => gercek gurultu
-            if now - self.loud_start >= SUSTAIN_SEC:
-                self.show_alert(db)
-        else:
-            # Kisa dususler (konusma duraklari) sayaci sifirlamasin;
-            # ancak bosluk toleransi asilirsa gurultu bitti say
-            if self.loud_start is not None and now - self.last_loud > GAP_TOLERANCE:
-                self.loud_start = None
+        # 90 dB asilmadiysa hicbir sey yapma
+        if db < self.threshold:
+            return
+
+        # Yapay zeka aktifse: SADECE gurultu karari varsa ot (konusmaya otme).
+        # AI yoksa veya karari bayatladiysa eski davranis (anlik dB esigi).
+        if self.ai_active:
+            fresh = (time.time() - self.noise_time) < NOISE_FRESH_SEC
+            if fresh and not self.last_noise:
+                return  # ogretmen konusmasi -> otme
+        self.show_alert(db)
 
     def on_lesson_end(self):
         self._stop_timer()
@@ -1103,7 +1115,7 @@ class OzBelApp:
         ctx.add_class("pill")
         self.alert_count  = 0
         self.alert_max_db = 0
-        self.loud_start   = None
+        self.last_noise   = False
         self.mic_active   = False
 
     def show_lesson_summary(self):
@@ -1176,7 +1188,7 @@ class OzBelApp:
 
     def disconnect_teacher(self, *_):
         self._stop_timer()
-        self.loud_start = None
+        self.last_noise = False
         self.mic_active = False
         self.relay.put("control", "disconnect")
         self.restore_main()
