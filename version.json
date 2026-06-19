@@ -1,9 +1,9 @@
 {
-  "version": "2.2.3",
+  "version": "2.2.4",
   "url": "https://raw.githubusercontent.com/ozguroyunuzmn/ozbel/main/ozbel.py",
   "changelog": [
-    "Uyari sesi degisti - artik ozel MP3 sesi calar (bell yerine)",
-    "Daha az duyarli - AI acikken sadece TAZE gurultu karariyla oter, konusmaya otmez",
-    "Yapay zeka gurultu karari icin belirgin fark sarti (yanlis otme azaldi)"
+    "Bagiris/islik artik kacmiyor: cok yuksek seste (96+) AI ne derse desin oter",
+    "Guvenlik agi eklendi - zararli seviye sesi konusma sanip susmuyor",
+    "Telefon tarafinda bagiris/islik/cigligi 'sert ses' olarak dogru yakalar"
   ]
 }

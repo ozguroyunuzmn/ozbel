@@ -18,7 +18,7 @@ FIREBASE_DB = "https://ozbel-eb6af-default-rtdb.europe-west1.firebasedatabase.ap
 NETLIFY_URL = "https://glistening-fudge-bca794.netlify.app"
 # ==============================================
 
-APP_VERSION = "2.2.3"
+APP_VERSION = "2.2.4"
 # GitHub API üzerinden okunur — raw CDN'in aksine query/no-cache'e saygı duyar,
 # böylece 5 dakikalık önbelleğe takılmadan anında günceli görür.
 GH_API      = "https://api.github.com/repos/ozguroyunuzmn/ozbel/contents"
@@ -1154,8 +1154,14 @@ class OzBelApp:
         if db < self.threshold:
             return
 
-        # Yapay zeka aktifse: SADECE taze 'gurultu' karari varsa ot.
-        # Boylece konusmaya, sessizlige ve baslangic anina (karar gelmeden) otmez.
+        # GUVENLIK AGI: cok yuksek ses (esik+6, orn. 96+) zaten zararli —
+        # AI ne derse desin (bagiris/islik konusma sanilsa bile) OT.
+        if db >= self.threshold + 6:
+            self.show_alert(db)
+            return
+
+        # Esik..esik+6 arasi: tek kisi yuksekce konusuyor olabilir.
+        # Yapay zeka aktifse SADECE taze 'gurultu' karariyla ot.
         if self.ai_active:
             fresh = (time.time() - self.noise_time) < NOISE_FRESH_SEC
             if not (fresh and self.last_noise):

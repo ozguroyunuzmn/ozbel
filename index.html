@@ -515,6 +515,11 @@ const NOISE_SET = new Set([
   'Smash, crash','Breaking','Glass','Shatter','Whack, thwack',
   'Crushing','Crumpling, crinkling','Boom','Clatter','Clink','Rattle',
   'Clicking','Whistling','Stomp','Walk, footsteps','Squeal']);
+// "Sert" sesler — bağırış/çığlık/ıslık/alkış/vurma: konuşma puanına BAKMADAN gürültü say
+const HARD_NOISE_SET = new Set([
+  'Shout','Bellow','Yell','Children shouting','Screaming','Whistling','Whistle',
+  'Crowd','Cheering','Applause','Clapping','Bang','Slam','Smash, crash',
+  'Boom','Knock','Thump, thud','Squeal']);
 
 async function initAImodel() {
   try {
@@ -585,7 +590,7 @@ async function aiClassify() {
   if (!aiReady || ended) return;
   const wave = resample16k();
   if (!wave) return;
-  let speechScore=0, noiseScore=0;
+  let speechScore=0, noiseScore=0, hardScore=0;
   try {
     const out = tf.tidy(() => {
       const res = yamnet.predict(tf.tensor1d(wave));
@@ -596,14 +601,18 @@ async function aiClassify() {
     tf.dispose(out);
     for (let i=0;i<mean.length;i++) {
       const nm = classNames[i];
-      if (SPEECH_SET.has(nm)) speechScore += mean[i];
+      if (HARD_NOISE_SET.has(nm)) { hardScore += mean[i]; noiseScore += mean[i]; }
       else if (NOISE_SET.has(nm)) noiseScore += mean[i];
+      else if (SPEECH_SET.has(nm)) speechScore += mean[i];
     }
   } catch (_) { return; }
 
-  // Gürültü ancak BELİRGİN şekilde baskınsa "gürültü" say (kararsızsa konuşma kabul et).
-  // 1.4x marj + alt eşik: normal konuşma yanlışlıkla gürültü sayılıp ötmesin.
-  const isNoise = (noiseScore > speechScore * 1.4) && (noiseScore > 0.04);
+  // Karar:
+  //  • Bağırış/çığlık/ıslık/alkış (sert ses) belirgin varsa → konuşmaya bakma, GÜRÜLTÜ.
+  //  • Aksi halde gürültü, konuşmayla yarışacak kadar varsa → gürültü.
+  //  Böylece tek kişi sakin konuşunca ötmez ama bağırış/ıslık ÖTER.
+  const isNoise = (hardScore > 0.015) ||
+                  (noiseScore > speechScore * 0.9 && noiseScore > 0.03);
   fbPut('noise', isNoise);
   updateAITag(isNoise, speechScore, noiseScore);
 }
