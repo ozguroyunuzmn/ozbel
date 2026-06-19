@@ -8,18 +8,25 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -35,12 +42,20 @@ import com.journeyapps.barcodescanner.ScanOptions
 private val BG = Color(0xFF080B12)
 private val CARD = Color(0xFF161B22)
 private val BLUE = Color(0xFF3B82F6)
+private val BLUE2 = Color(0xFF1D4ED8)
+private val BLUE_LT = Color(0xFF60A5FA)
 private val GREEN = Color(0xFF22C55E)
 private val RED = Color(0xFFEF4444)
 private val ORANGE = Color(0xFFF59E0B)
 private val MUTED = Color(0xFF94A3B8)
 private val TEXT = Color(0xFFF0F4F9)
-private val BORDER = Color(0xFF30363D)
+private val BORDER = Color(0xFF24304A)
+
+private val bgBrush = Brush.linearGradient(
+    colors = listOf(Color(0xFF0A0E18), BG, Color(0xFF0A1410)),
+    start = Offset(0f, 0f), end = Offset(900f, 1600f)
+)
+private val blueBtn = Brush.linearGradient(listOf(BLUE_LT, BLUE2))
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -74,23 +89,19 @@ fun App() {
         val micOk = result[Manifest.permission.RECORD_AUDIO] == true ||
             ContextCompat.checkSelfPermission(ctx, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
         if (micOk) {
-            startMonitor(ctx)
-            AppState.screen.value = AppState.Screen.ACTIVE
+            startMonitor(ctx); AppState.screen.value = AppState.Screen.ACTIVE
         } else {
             AppState.errorMsg.value = "Mikrofon izni olmadan ölçüm yapılamaz."
             AppState.screen.value = AppState.Screen.ERROR
         }
     }
 
-    Box(Modifier.fillMaxSize().background(BG), contentAlignment = Alignment.Center) {
+    Box(Modifier.fillMaxSize().background(bgBrush), contentAlignment = Alignment.Center) {
         when (screen) {
             AppState.Screen.INTRO -> IntroScreen(onScan = {
-                val opts = ScanOptions().apply {
-                    setPrompt("Tahtadaki karekodu okutun")
-                    setBeepEnabled(false)
-                    setOrientationLocked(true)
-                }
-                scanLauncher.launch(opts)
+                scanLauncher.launch(ScanOptions().apply {
+                    setPrompt("Tahtadaki karekodu okutun"); setBeepEnabled(false); setOrientationLocked(true)
+                })
             })
             AppState.Screen.MIC -> MicScreen {
                 val perms = mutableListOf(Manifest.permission.RECORD_AUDIO)
@@ -107,26 +118,92 @@ fun App() {
     }
 }
 
+// ───────────────── Ortak parçalar ─────────────────
+
+@Composable
+fun Logo(big: Boolean = true) {
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(11.dp)) {
+        Box(
+            Modifier.size(if (big) 46.dp else 36.dp).clip(RoundedCornerShape(13.dp)).background(blueBtn),
+            contentAlignment = Alignment.Center
+        ) { Text("🔊", fontSize = if (big) 22.sp else 18.sp) }
+        Row {
+            Text("Öz", color = TEXT, fontSize = if (big) 30.sp else 24.sp, fontWeight = FontWeight.Black)
+            Text("Bel", color = BLUE_LT, fontSize = if (big) 30.sp else 24.sp, fontWeight = FontWeight.Black)
+        }
+    }
+}
+
+@Composable
+fun GradientButton(text: String, onClick: () -> Unit) {
+    Box(
+        Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(blueBtn)
+            .clickableNoRipple(onClick).padding(vertical = 18.dp),
+        contentAlignment = Alignment.Center
+    ) { Text(text, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp) }
+}
+
+@Composable
+fun GlassCard(content: @Composable ColumnScope.() -> Unit) {
+    Surface(
+        color = CARD, shape = RoundedCornerShape(20.dp),
+        border = androidx.compose.foundation.BorderStroke(1.dp, BORDER),
+        modifier = Modifier.fillMaxWidth()
+    ) { Column(Modifier.padding(20.dp), content = content) }
+}
+
 // ───────────────── Ekranlar ─────────────────
 
 @Composable
 fun IntroScreen(onScan: () -> Unit) {
     Column(
-        Modifier.fillMaxWidth().padding(28.dp),
+        Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(26.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        verticalArrangement = Arrangement.Center
     ) {
-        Text("ÖzBel", color = TEXT, fontSize = 40.sp, fontWeight = FontWeight.Black)
-        Text("Kulak Sağlığı Koruma Sistemi", color = MUTED, fontSize = 12.sp)
+        Spacer(Modifier.height(40.dp))
+        Logo(big = true)
         Spacer(Modifier.height(6.dp))
-        Text("Sınıfın gürültüsü 90 dB'i geçtiğinde tahtada öğrencilere uyarı gösterilir.",
-            color = MUTED, fontSize = 13.sp, textAlign = TextAlign.Center)
-        Spacer(Modifier.height(8.dp))
-        BigButton("📷  Karekod Okut", BLUE, Color.White, onScan)
+        Text("Kulak Sağlığı Koruma Sistemi", color = MUTED, fontSize = 12.sp)
+        Spacer(Modifier.height(26.dp))
+
+        GlassCard {
+            Text("Nasıl Çalışır?", color = TEXT, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+            Spacer(Modifier.height(8.dp))
+            StepRow("1", "Tahtadaki büyük QR'ı okutun", "Kamera uygulamasıyla veya aşağıdaki butona basın")
+            StepDivider()
+            StepRow("2", "Mikrofon izni verin", "Ses seviyesi ölçümü için gerekli")
+            StepDivider()
+            StepRow("3", "Sistem aktif", "90 dB'i aşınca tahtada uyarı çıkar", last = true)
+        }
+
+        Spacer(Modifier.height(24.dp))
+        GradientButton("📷  Karekod Okut", onScan)
+        Spacer(Modifier.height(14.dp))
         Text("Mikrofon yalnızca ses seviyesi ölçümü için kullanılır. Ses kaydedilmez.",
             color = MUTED, fontSize = 11.sp, textAlign = TextAlign.Center)
+        Spacer(Modifier.height(40.dp))
     }
 }
+
+@Composable
+fun StepRow(num: String, title: String, sub: String, last: Boolean = false) {
+    Row(Modifier.fillMaxWidth().padding(vertical = 11.dp), verticalAlignment = Alignment.Top) {
+        Box(
+            Modifier.size(28.dp).clip(CircleShape)
+                .background(Brush.linearGradient(listOf(BLUE.copy(alpha = .35f), BLUE.copy(alpha = .12f)))),
+            contentAlignment = Alignment.Center
+        ) { Text(num, color = BLUE_LT, fontSize = 13.sp, fontWeight = FontWeight.Bold) }
+        Spacer(Modifier.width(13.dp))
+        Column {
+            Text(title, color = TEXT, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+            Text(sub, color = MUTED, fontSize = 12.sp)
+        }
+    }
+}
+
+@Composable
+fun StepDivider() { Box(Modifier.fillMaxWidth().height(1.dp).background(BORDER)) }
 
 @Composable
 fun MicScreen(onAllow: () -> Unit) {
@@ -135,11 +212,12 @@ fun MicScreen(onAllow: () -> Unit) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        Text("🎤", fontSize = 56.sp)
-        Text("Mikrofon İzni", color = TEXT, fontSize = 21.sp, fontWeight = FontWeight.Bold)
+        Text("🎤", fontSize = 64.sp)
+        Text("Mikrofon İzni", color = TEXT, fontSize = 22.sp, fontWeight = FontWeight.Bold)
         Text("Ses seviyesini ölçmek için mikrofon izni gerekli.\nAçılan pencerede \"İzin Ver\" seçin.",
             color = MUTED, fontSize = 13.sp, textAlign = TextAlign.Center)
-        BigButton("Mikrofon İzni Ver & Başla", BLUE, Color.White, onAllow)
+        Spacer(Modifier.height(4.dp))
+        GradientButton("Mikrofon İzni Ver & Başla", onAllow)
     }
 }
 
@@ -149,91 +227,102 @@ fun ActiveScreen(db: Int, onEnd: () -> Unit) {
     val rec = remember { DeviceRec.detect() }
     var calib by remember { mutableStateOf(Prefs.getCalib(ctx)) }
 
-    val color = when { db >= 90 -> RED; db >= 70 -> ORANGE; else -> GREEN }
+    // 60fps akıcı geçiş — değerler arası yumuşak interpolasyon
+    val animDb by animateFloatAsState(
+        targetValue = db.toFloat(),
+        animationSpec = tween(durationMillis = 220, easing = LinearEasing),
+        label = "db"
+    )
+    val targetColor = when { db >= 90 -> RED; db >= 70 -> ORANGE; else -> GREEN }
+    val ringColor by animateColorAsState(targetColor, tween(300), label = "col")
     val status = when { db >= 90 -> "⚠️ Çok Gürültülü!"; db >= 70 -> "Dikkat — Yüksek Ses"; else -> "Normal Seviye" }
 
     Column(
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(18.dp)
+        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        Spacer(Modifier.height(8.dp))
-        Text("ÖzBel  ● Aktif", color = GREEN, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+        Spacer(Modifier.height(10.dp))
+        Logo(big = false)
 
-        Box(contentAlignment = Alignment.Center, modifier = Modifier.size(220.dp)) {
+        Box(contentAlignment = Alignment.Center, modifier = Modifier.size(240.dp).padding(top = 6.dp)) {
             Canvas(Modifier.fillMaxSize()) {
-                val stroke = 28f
+                val stroke = 30f
                 val d = size.minDimension - stroke
                 val tl = Offset((size.width - d) / 2, (size.height - d) / 2)
-                drawArc(Color(0x22FFFFFF), -90f, 360f, false, topLeft = tl, size = Size(d, d),
+                drawArc(Color(0x18FFFFFF), -90f, 360f, false, topLeft = tl, size = Size(d, d),
                     style = Stroke(stroke, cap = StrokeCap.Round))
-                val sweep = (db.coerceIn(0, 120) / 120f) * 360f
-                drawArc(color, -90f, sweep, false, topLeft = tl, size = Size(d, d),
+                val sweep = (animDb.coerceIn(0f, 120f) / 120f) * 360f
+                drawArc(ringColor, -90f, sweep, false, topLeft = tl, size = Size(d, d),
                     style = Stroke(stroke, cap = StrokeCap.Round))
             }
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text("$db", color = TEXT, fontSize = 58.sp, fontWeight = FontWeight.Black)
+                Text("$db", color = TEXT, fontSize = 64.sp, fontWeight = FontWeight.Black)
                 Text("DESİBEL", color = MUTED, fontSize = 11.sp)
             }
         }
-        Text(status, color = color, fontSize = 14.sp, fontWeight = FontWeight.Bold)
-        BigButton("🏁 Ders Bitti", RED, Color.White, onEnd)
-
-        // ── Akıllı cihaz kutusu ──
-        Surface(color = CARD, shape = RoundedCornerShape(16.dp),
-            modifier = Modifier.fillMaxWidth().padding(top = 6.dp)) {
-            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text("📱  ${rec.name} tespit edildi", color = TEXT, fontSize = 14.sp, fontWeight = FontWeight.Bold)
-                Text("Bu cihaz için önerilen ayar: ${rec.label}", color = MUTED, fontSize = 12.sp)
-                Spacer(Modifier.height(6.dp))
-                Surface(color = BLUE, shape = RoundedCornerShape(10.dp)) {
-                    Text("Öneriyi Uygula", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 11.dp)
-                            .clickableNoRipple { calib = rec.calib; setCalibLive(ctx, rec.calib) })
-                }
-            }
+        Surface(color = ringColor.copy(alpha = .14f), shape = RoundedCornerShape(999.dp),
+            border = androidx.compose.foundation.BorderStroke(1.dp, ringColor.copy(alpha = .4f))) {
+            Text(status, color = ringColor, fontSize = 13.sp, fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(horizontal = 20.dp, vertical = 9.dp))
         }
 
-        // ── Hassasiyet seçici (5 seviye) ──
-        Surface(color = CARD, shape = RoundedCornerShape(16.dp), modifier = Modifier.fillMaxWidth()) {
-            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("Mikrofon Hassasiyeti", color = TEXT, fontSize = 13.sp, fontWeight = FontWeight.Bold)
-                SENS_LEVELS.forEach { lvl ->
-                    val sel = lvl.calib == calib
-                    Surface(
-                        color = if (sel) BLUE.copy(alpha = 0.20f) else Color.Transparent,
-                        shape = RoundedCornerShape(12.dp),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, if (sel) BLUE else BORDER),
-                        modifier = Modifier.fillMaxWidth()
+        Spacer(Modifier.height(2.dp))
+        Box(
+            Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp))
+                .background(Brush.linearGradient(listOf(Color(0xFFF87171), RED)))
+                .clickableNoRipple(onEnd).padding(vertical = 16.dp),
+            contentAlignment = Alignment.Center
+        ) { Text("🏁  Ders Bitti", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 15.sp) }
+
+        // Cihaz kutusu
+        GlassCard {
+            Text("📱  ${rec.name} tespit edildi", color = TEXT, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+            Text("Bu cihaz için önerilen ayar: ${rec.label}", color = MUTED, fontSize = 12.sp)
+            Spacer(Modifier.height(10.dp))
+            Box(
+                Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).background(blueBtn)
+                    .clickableNoRipple { calib = rec.calib; setCalibLive(ctx, rec.calib) }
+                    .padding(vertical = 11.dp),
+                contentAlignment = Alignment.Center
+            ) { Text("Öneriyi Uygula", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold) }
+        }
+
+        // Hassasiyet seçici
+        GlassCard {
+            Text("Mikrofon Hassasiyeti", color = TEXT, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+            Spacer(Modifier.height(8.dp))
+            SENS_LEVELS.forEach { lvl ->
+                val sel = lvl.calib == calib
+                Surface(
+                    color = if (sel) BLUE.copy(alpha = .20f) else Color.Transparent,
+                    shape = RoundedCornerShape(12.dp),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, if (sel) BLUE else BORDER),
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
+                ) {
+                    Row(
+                        Modifier.fillMaxWidth().padding(13.dp)
+                            .clickableNoRipple { calib = lvl.calib; setCalibLive(ctx, lvl.calib) },
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Row(
-                            Modifier.fillMaxWidth().padding(13.dp)
-                                .clickableNoRipple { calib = lvl.calib; setCalibLive(ctx, lvl.calib) },
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text("${lvl.emoji}  ${lvl.label}", color = if (sel) TEXT else MUTED,
-                                fontSize = 14.sp, fontWeight = if (sel) FontWeight.Bold else FontWeight.Normal)
-                            Spacer(Modifier.weight(1f))
-                            if (lvl.calib == rec.calib) {
-                                Text("Önerilen", color = BLUE, fontSize = 10.sp, fontWeight = FontWeight.Black)
-                            }
-                        }
+                        Text("${lvl.emoji}  ${lvl.label}", color = if (sel) TEXT else MUTED,
+                            fontSize = 14.sp, fontWeight = if (sel) FontWeight.Bold else FontWeight.Normal)
+                        Spacer(Modifier.weight(1f))
+                        if (lvl.calib == rec.calib)
+                            Text("Önerilen", color = BLUE_LT, fontSize = 10.sp, fontWeight = FontWeight.Black)
                     }
                 }
-                Text("Bağırınca ötüyor ama normal seste ötmüyorsa ideal ayardasınız.",
-                    color = MUTED, fontSize = 11.sp)
             }
         }
-        Spacer(Modifier.height(20.dp))
+        Spacer(Modifier.height(24.dp))
     }
 }
 
 @Composable
 fun DoneScreen() {
     Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(14.dp)) {
-        Text("🏁", fontSize = 70.sp)
-        Text("Ders Tamamlandı", color = TEXT, fontSize = 21.sp, fontWeight = FontWeight.Bold)
+        Text("🏁", fontSize = 72.sp)
+        Text("Ders Tamamlandı", color = TEXT, fontSize = 22.sp, fontWeight = FontWeight.Bold)
         Text("Mikrofon kapatıldı.\nUygulamayı kapatabilirsiniz.", color = MUTED, fontSize = 13.sp, textAlign = TextAlign.Center)
     }
 }
@@ -245,17 +334,14 @@ fun ErrorScreen(msg: String, onRetry: () -> Unit) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        Text("⚠️", fontSize = 56.sp)
-        Text("Hata", color = TEXT, fontSize = 21.sp, fontWeight = FontWeight.Bold)
+        Text("⚠️", fontSize = 60.sp)
+        Text("Hata", color = TEXT, fontSize = 22.sp, fontWeight = FontWeight.Bold)
         Text(msg, color = MUTED, fontSize = 13.sp, textAlign = TextAlign.Center)
-        BigButton("Yeniden Dene", CARD, TEXT, onRetry)
-    }
-}
-
-@Composable
-fun BigButton(text: String, bg: Color, fg: Color, onClick: () -> Unit) {
-    Surface(color = bg, shape = RoundedCornerShape(15.dp), modifier = Modifier.fillMaxWidth()) {
-        Text(text, color = fg, fontWeight = FontWeight.Bold, fontSize = 15.sp, textAlign = TextAlign.Center,
-            modifier = Modifier.fillMaxWidth().padding(vertical = 17.dp).clickableNoRipple(onClick))
+        Surface(color = CARD, shape = RoundedCornerShape(14.dp),
+            border = androidx.compose.foundation.BorderStroke(1.dp, BORDER)) {
+            Text("Yeniden Dene", color = TEXT, fontWeight = FontWeight.Bold, fontSize = 14.sp,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth().clickableNoRipple(onRetry).padding(vertical = 14.dp))
+        }
     }
 }

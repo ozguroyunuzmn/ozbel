@@ -54,7 +54,7 @@ class MonitorService : Service() {
             val sampleRate = 44100
             val minBuf = AudioRecord.getMinBufferSize(
                 sampleRate, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT)
-            val bufSize = max(minBuf, sampleRate / 5) // ~200ms
+            val bufSize = max(minBuf, sampleRate / 15) // ~66ms → daha akıcı gösterim
             val rec = try {
                 AudioRecord(
                     MediaRecorder.AudioSource.MIC, sampleRate,
