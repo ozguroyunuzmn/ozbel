@@ -39,13 +39,21 @@ fun extractSession(content: String): String? {
 }
 
 /** Ölçüm servisini başlat. */
-fun startMonitor(ctx: Context, s: Sensitivity) {
+fun startMonitor(ctx: Context) {
+    val calib = Prefs.getCalib(ctx).toDouble()
+    AppState.calib = calib
     val i = Intent(ctx, MonitorService::class.java).apply {
         action = MonitorService.ACTION_START
         putExtra(MonitorService.EXTRA_SESSION, AppState.sessionId)
-        putExtra(MonitorService.EXTRA_CALIB, s.calib)
+        putExtra(MonitorService.EXTRA_CALIB, calib)
     }
     ContextCompat.startForegroundService(ctx, i)
+}
+
+/** Hassasiyeti canlı değiştir (slider/buton) — servis anında okur + kaydet. */
+fun setCalibLive(ctx: Context, calib: Int) {
+    AppState.calib = calib.toDouble()
+    Prefs.setCalib(ctx, calib)
 }
 
 /** Ders bitti — board'a haber ver + servisi durdur. */

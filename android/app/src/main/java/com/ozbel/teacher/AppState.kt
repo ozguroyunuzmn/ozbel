@@ -13,6 +13,9 @@ object AppState {
     // Oturum
     @Volatile var sessionId: String? = null
 
+    // Canlı hassasiyet (kalibrasyon offset'i) — slider değiştirince servis anında okur
+    @Volatile var calib: Double = 90.0
+
     fun reset() {
         sessionId = null
         db.value = 0

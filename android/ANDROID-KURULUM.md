@@ -36,15 +36,21 @@ Site ile aynı akış: **Karekod Okut → Mikrofon İzni → Ölçüm**, ama:
 5. İnceleme notu: "Sınıf gürültüsünü ölçen okul aracı; arka plan mikrofonu sürekli ölçüm için gerekli."
 
 ## Hassasiyet nasıl çalışır
-Telefon, ham sesi dB'ye çevirirken bir **kalibrasyon offset**'i ekler:
-| Seviye | Offset | Davranış |
-|--------|--------|----------|
-| Çok Duyarlı | 95 | En küçük seste bile yüksek dB |
-| Duyarlı | 90 | Varsayılan |
-| Orta | 85 | Daha sakin |
-| Düşük | 80 | Sadece gerçek bağırışta |
+Ölçüm ekranında **5 seviye** vardır (site ile aynı), ölçerken canlı değişir:
+| Seviye | Offset |
+|--------|--------|
+| 🔊 Çok Duyarlı | 105 |
+| 🔉 Duyarlı | 100 |
+| ⚖️ Orta | 97 |
+| 🔈 Az Duyarlı | 92 |
+| 🔇 Duyarsız | 87 |
 
-Tahtadaki 90 dB eşiği sabit; offset düştükçe aynı ses daha düşük dB olarak gider → daha az öter.
+Üstte **cihaz kutusu**: telefon modelini (Build.MODEL) gösterir ve markaya/forma göre
+önerilen seviyeyi işaretler ("Öneriyi Uygula"). Öneri kuralı `DeviceRec.kt` içinde —
+Xiaomi/Redmi/POCO/Huawei → Duyarlı(100), tablet → Duyarlı(100), Samsung/Pixel/diğer → Orta(97).
+İstediğin modeli oraya ekleyip ince ayar yapabiliriz.
+
+Tahtadaki 90 dB eşiği sabit; offset düştükçe aynı ses daha düşük dB gider → daha az öter.
 
 ## Mimari
 ```

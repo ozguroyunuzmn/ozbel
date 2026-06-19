@@ -23,7 +23,6 @@ class MonitorService : Service() {
 
     @Volatile private var running = false
     private var worker: Thread? = null
-    private var calib = 90.0
     private var session: String = ""
 
     override fun onBind(intent: Intent?): IBinder? = null
@@ -33,7 +32,7 @@ class MonitorService : Service() {
             ACTION_STOP -> { stopEverything(); return START_NOT_STICKY }
             else -> {
                 session = intent?.getStringExtra(EXTRA_SESSION) ?: AppState.sessionId ?: ""
-                calib = intent?.getDoubleExtra(EXTRA_CALIB, 90.0) ?: 90.0
+                AppState.calib = intent?.getDoubleExtra(EXTRA_CALIB, AppState.calib) ?: AppState.calib
                 startForeground(NOTIF_ID, buildNotification())
                 startMeasuring()
             }
@@ -78,7 +77,7 @@ class MonitorService : Service() {
                     for (i in 0 until n) { val s = buf[i].toDouble(); sum += s * s }
                     val rms = sqrt(sum / n) / 32768.0
                     val raw = if (rms > 0.00001)
-                        min(120.0, max(0.0, 20.0 * log10(rms) + calib)) else 0.0
+                        min(120.0, max(0.0, 20.0 * log10(rms) + AppState.calib)) else 0.0
                     dbSmooth = if (dbSmooth == 0.0) raw else dbSmooth * 0.8 + raw * 0.2
                     val db = dbSmooth.toInt()
                     AppState.db.value = db

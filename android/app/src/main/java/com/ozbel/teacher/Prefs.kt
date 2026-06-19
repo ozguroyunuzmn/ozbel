@@ -2,31 +2,30 @@ package com.ozbel.teacher
 
 import android.content.Context
 
-/** Hassasiyet seviyeleri — kalibrasyon offset'ini değiştirir.
- *  Yüksek offset = dB daha yüksek okunur = daha duyarlı (kolay öter). */
-enum class Sensitivity(val label: String, val calib: Double) {
-    COK_DUYARLI("Çok Duyarlı", 95.0),
-    DUYARLI("Duyarlı", 90.0),
-    ORTA("Orta", 85.0),
-    DUSUK("Düşük", 80.0);
+/** Hassasiyet seviyeleri — site (index.html) ile birebir aynı kalibrasyon değerleri.
+ *  Yüksek calib = dB daha yüksek okunur = daha duyarlı. */
+data class SensLevel(val calib: Int, val emoji: String, val label: String)
 
-    companion object {
-        fun fromName(n: String?): Sensitivity =
-            entries.firstOrNull { it.name == n } ?: DUYARLI
-    }
-}
+val SENS_LEVELS = listOf(
+    SensLevel(105, "🔊", "Çok Duyarlı"),
+    SensLevel(100, "🔉", "Duyarlı"),
+    SensLevel(97,  "⚖️", "Orta"),
+    SensLevel(92,  "🔈", "Az Duyarlı"),
+    SensLevel(87,  "🔇", "Duyarsız"),
+)
 
 object Prefs {
     private const val FILE = "ozbel_prefs"
-    private const val KEY_SENS = "sensitivity"
+    private const val KEY_CALIB = "calib"
+    const val DEFAULT_CALIB = 97
 
-    fun getSensitivity(ctx: Context): Sensitivity {
-        val sp = ctx.getSharedPreferences(FILE, Context.MODE_PRIVATE)
-        return Sensitivity.fromName(sp.getString(KEY_SENS, Sensitivity.DUYARLI.name))
+    fun getCalib(ctx: Context): Int =
+        ctx.getSharedPreferences(FILE, Context.MODE_PRIVATE).getInt(KEY_CALIB, DEFAULT_CALIB)
+
+    fun setCalib(ctx: Context, v: Int) {
+        ctx.getSharedPreferences(FILE, Context.MODE_PRIVATE).edit().putInt(KEY_CALIB, v).apply()
     }
 
-    fun setSensitivity(ctx: Context, s: Sensitivity) {
-        ctx.getSharedPreferences(FILE, Context.MODE_PRIVATE)
-            .edit().putString(KEY_SENS, s.name).apply()
-    }
+    fun labelFor(calib: Int): String =
+        SENS_LEVELS.firstOrNull { it.calib == calib }?.label ?: "Orta"
 }
