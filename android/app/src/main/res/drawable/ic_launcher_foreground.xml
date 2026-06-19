@@ -1,0 +1,27 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <group
+        android:translateX="30"
+        android:translateY="30"
+        android:scaleX="2"
+        android:scaleY="2">
+        <!-- Hoparlör gövdesi -->
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M3,9 L7,9 L11,5 L11,19 L7,15 L3,15 Z" />
+        <!-- Ses dalgaları -->
+        <path
+            android:strokeColor="#60A5FA"
+            android:strokeWidth="1.6"
+            android:fillColor="#00000000"
+            android:pathData="M14,8 C16,10 16,14 14,16" />
+        <path
+            android:strokeColor="#60A5FA"
+            android:strokeWidth="1.6"
+            android:fillColor="#00000000"
+            android:pathData="M16.5,6 C19.5,9 19.5,15 16.5,18" />
+    </group>
+</vector>

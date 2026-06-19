@@ -1,0 +1,1 @@
+# Varsayılan kurallar yeterli
