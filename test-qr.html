@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ÖzBel — Test / Demo QR</title>
+<style>
+  body { font-family:'Segoe UI',system-ui,sans-serif; background:#0d1117; color:#e6edf3;
+    min-height:100vh; margin:0; display:flex; flex-direction:column; align-items:center;
+    justify-content:center; gap:18px; padding:24px; text-align:center; }
+  h1 { font-size:22px; } p { color:#8b949e; max-width:420px; line-height:1.6; font-size:14px; }
+  #qr { background:#fff; padding:18px; border-radius:16px; }
+  .code { color:#60a5fa; font-weight:800; letter-spacing:2px; }
+</style>
+</head>
+<body>
+  <h1>ÖzBel — Test / Demo QR</h1>
+  <p>Bu QR, normalde sınıf tahtasında görünen kodun aynısıdır.
+  Uygulamadaki <b>"Karekod Okut"</b> ile bu kareyi okutun, ardından mikrofon izni verin —
+  uygulama ses seviyesini ölçmeye başlar. Giriş/şifre gerekmez.</p>
+  <div id="qr"></div>
+  <p>Demo oturum kodu: <span class="code">DEMO2026</span></p>
+
+  <script src="https://cdn.jsdelivr.net/gh/davidshimjs/qrcodejs@master/qrcode.min.js"></script>
+  <script>
+    new QRCode(document.getElementById("qr"), {
+      text: "https://ozgurataozgur.github.io/ozbel/?s=DEMO2026",
+      width: 260, height: 260,
+      correctLevel: QRCode.CorrectLevel.M
+    });
+  </script>
+</body>
+</html>
