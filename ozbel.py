@@ -16,13 +16,13 @@ from datetime import datetime
 # =================== CONFIG ===================
 FIREBASE_DB = "https://ozbel-eb6af-default-rtdb.europe-west1.firebasedatabase.app"
 # Öğretmen sitesi artık GitHub Pages'te (ücretsiz/kalıcı) — Netlify yerine
-NETLIFY_URL = "https://ozguroyunuzmn.github.io/ozbel"
+NETLIFY_URL = "https://ozgurataozgur.github.io/ozbel"
 # ==============================================
 
-APP_VERSION = "2.2.5"
+APP_VERSION = "2.2.6"
 # GitHub API üzerinden okunur — raw CDN'in aksine query/no-cache'e saygı duyar,
 # böylece 5 dakikalık önbelleğe takılmadan anında günceli görür.
-GH_API      = "https://api.github.com/repos/ozguroyunuzmn/ozbel/contents"
+GH_API      = "https://api.github.com/repos/ozgurataozgur/ozbel/contents"
 UPDATE_JSON = GH_API + "/version.json"
 PY_DOWNLOAD = GH_API + "/ozbel.py"
 
