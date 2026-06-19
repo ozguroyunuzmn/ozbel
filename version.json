@@ -1,9 +1,8 @@
 {
-  "version": "2.2.4",
+  "version": "2.2.5",
   "url": "https://raw.githubusercontent.com/ozguroyunuzmn/ozbel/main/ozbel.py",
   "changelog": [
-    "Bagiris/islik artik kacmiyor: cok yuksek seste (96+) AI ne derse desin oter",
-    "Guvenlik agi eklendi - zararli seviye sesi konusma sanip susmuyor",
-    "Telefon tarafinda bagiris/islik/cigligi 'sert ses' olarak dogru yakalar"
+    "Ogretmen sitesi GitHub Pages adresine tasindi (Netlify kredi sorunu)",
+    "QR artik ozguroyunuzmn.github.io/ozbel adresini gosterir"
   ]
 }

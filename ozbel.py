@@ -15,10 +15,11 @@ from datetime import datetime
 
 # =================== CONFIG ===================
 FIREBASE_DB = "https://ozbel-eb6af-default-rtdb.europe-west1.firebasedatabase.app"
-NETLIFY_URL = "https://glistening-fudge-bca794.netlify.app"
+# Öğretmen sitesi artık GitHub Pages'te (ücretsiz/kalıcı) — Netlify yerine
+NETLIFY_URL = "https://ozguroyunuzmn.github.io/ozbel"
 # ==============================================
 
-APP_VERSION = "2.2.4"
+APP_VERSION = "2.2.5"
 # GitHub API üzerinden okunur — raw CDN'in aksine query/no-cache'e saygı duyar,
 # böylece 5 dakikalık önbelleğe takılmadan anında günceli görür.
 GH_API      = "https://api.github.com/repos/ozguroyunuzmn/ozbel/contents"
